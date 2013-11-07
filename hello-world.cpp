@@ -48,11 +48,8 @@ void houghHandler(int);
 void drawHoughLines(int);
 
 int main(int argc, char *argv[]) {
-  CvCapture* capture = cvCaptureFromCAM(0); // open the default camera
-  IplImage* frame = cvQueryFrame(capture);
-  if(frame == NULL)
-      return -1;
-  cvShowImage("cap", frame);
+  //CvCapture* capture = cvCaptureFromCAM(0); // open the default camera
+  //IplImage* frame = cvQueryFrame(capture);
 
   int height,width,step,channels;
   uchar *data;
@@ -158,8 +155,12 @@ int main(int argc, char *argv[]) {
   
   
     // lopp until a key is pressed
-    while(cvWaitKey(30) == -1) {
-        
+    while(cvWaitKey(1) == -1) {
+        //frame = cvQueryFrame(capture);
+        //if(frame) {
+        //    cvShowImage("cap", frame);
+        //}
+        //cvReleaseImage(&frame);
     }
     // release the image
     cvReleaseImage(&img );
