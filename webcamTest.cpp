@@ -9,18 +9,28 @@
 
 using namespace cv;
 
-int edgeThresh = 1;
-int lowThreshold = 20;
-int houghThreshold = 50;
-int blurDim = 10;
-int const maxLowThreshold = 100;
+int blurDim = 5;
 int const maxBlurDim = 50;
+
+int lowThreshold = 20;
+int edgeThreshR = 20;
+int edgeThreshG = 20;
+int edgeThreshB = 20;
+
+int const maxEdgeThresh = 100;
+
+int houghThreshold = 50;
 int const maxHoughThreshold = 100;
+
+int edgeThresh = 1;
 int ratio = 3;
 int kernal_size = 3;
 unsigned int numLines;
+unsigned int maxWhite;
+unsigned int minWhite;
 float rho, theta;
 float* currentLine;
+CvPoint* currentLineP;
 CvPoint pt1, pt2;
 char* window_name = "Edge map";
 
@@ -56,10 +66,17 @@ IplImage* imgResColor = 0;
 
 CvSeq* lines;
 CvMemStorage* lineStorage;
+CvMemStorage* lineStorageP;
+uchar *data;
+
+void onTrackbarSlide(int){;}
 void blurHandler(int);
 void cannyHandler(int);
 void houghHandler(int);
 void drawHoughLines(int);
+void drawHoughLinesP(int);
+unsigned int countWhite(IplImage*);
+int adjustWhiteThresh(int thresh, int whiteCount);
 
 int main(int argc, char *argv[]) {
   CvCapture* capture = cvCaptureFromCAM(0); // open the default camera
@@ -71,7 +88,6 @@ int main(int argc, char *argv[]) {
   }
 
   int height,width,step,channels;
-  uchar *data;
   int i,j,k;
 
   if(argc<2){
@@ -86,8 +102,6 @@ int main(int argc, char *argv[]) {
     exit(0);
   }
 
-  // get the image data
-  //height    = frame->height;
   //width     = frame->width;
   //step      = frame->widthStep;
   //channels  = frame->nChannels;
@@ -102,6 +116,9 @@ int main(int argc, char *argv[]) {
   s = cvGetSize(frameScale);
   d = frameScale->depth;
 
+  maxWhite = 0.035*(s.width*s.height);
+  minWhite = 0.020*(s.width*s.height);
+
   // create memory for images with only one channel
   frameR =      cvCreateImage(s, d ,1);
   frameG =      cvCreateImage(s, d ,1);
@@ -114,76 +131,65 @@ int main(int argc, char *argv[]) {
   frameBedge =  cvCreateImage(s, d ,1);
   frameTmp   =  cvCreateImage(s, d ,1);
 
-  // create memory for images with only one channel
-  //CvSize s = cvGetSize(img);
-  //int d = img->depth;
-  //imgR = cvCreateImage(s, d ,1);
-  //imgG = cvCreateImage(s, d ,1);
-  //imgB = cvCreateImage(s, d ,1);
-  //imgE = cvCreateImage(s, d ,1);
-  //imgTmp = cvCreateImage(s, d ,1);
-  //cvSplit(img, imgB, imgG, imgR, 0);
   lineStorage = cvCreateMemStorage();
-  //imgRes = cvCreateImage(cvSize(DESIRED_WIDTH,height*DESIRED_WIDTH/width),d,1);
-  //imgResColor = cvCreateImage(cvSize(DESIRED_WIDTH,height*DESIRED_WIDTH/width),d,3);
 
-  //cvResize(imgR, imgRes);
-  //cvResize(img, imgResColor);
-  //CvSize s2 = cvGetSize(imgRes);
-  //imgTmp2 = cvCreateImage(s2, d ,1);
-  //imgE2 = cvCreateImage(s2, d ,1);
-  
-  
-  //printf("Resized image %dx%d image with %d channels\n",imgRes->width,imgRes->height,imgRes->nChannels); 
-
-
-  // Create a grayscale version if we want one
-  //imgGray = cvCreateImage(s, d ,1);
-  //cvCvtColor(img, imgGray, CV_RGB2GRAY);
+  // show the images
+  int scaleRow = 330;
+  int scaleCol = 420;
+  int offsetRow = 30;
+  int offsetCol = 80;
+  int tmpRow = 0;
+  int tmpCol = 0;
 
   // Open windows for images
-  cvNamedWindow("Original Image",   CV_WINDOW_NORMAL);
-  cvMoveWindow( "Original Image",   0, 0);
-  cvNamedWindow("Scaled Image",     CV_WINDOW_NORMAL);
-  cvMoveWindow( "Scaled Image",     0, 360);
-  cvNamedWindow("Final Image",      CV_WINDOW_NORMAL);
-  cvMoveWindow( "Final Image",      0, 700);
+  tmpRow = 0; tmpCol = 0;
+  cvNamedWindow("Original Image", CV_WINDOW_NORMAL);
+  cvMoveWindow( "Original Image", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+  tmpRow = 1; tmpCol = 0;
+  cvNamedWindow("Scaled Image",   CV_WINDOW_NORMAL);
+  cvMoveWindow(  "Scaled Image",  tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+  tmpRow = 2; tmpCol = 0;
+  cvNamedWindow("Final Image",    CV_WINDOW_NORMAL);
+  cvMoveWindow( "Final Image",    tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
 
-  cvNamedWindow("Red Channel",          CV_WINDOW_NORMAL);
-  cvMoveWindow( "Red Channel",          470, 0);
-  cvNamedWindow("Green Channel",        CV_WINDOW_NORMAL);
-  cvMoveWindow( "Green Channel",        470, 360);
-  cvNamedWindow("Blue Channel",         CV_WINDOW_NORMAL);
-  cvMoveWindow( "Blue Channel",         470, 700);
+  tmpRow = 0; tmpCol = 1;
+  cvNamedWindow("Red Channel",    CV_WINDOW_NORMAL);
+  cvMoveWindow( "Red Channel",    tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+  tmpRow = 1; tmpCol = 1;
+  cvNamedWindow("Green Channel",  CV_WINDOW_NORMAL);
+  cvMoveWindow( "Green Channel",  tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+  tmpRow = 2; tmpCol = 1;
+  cvNamedWindow("Blue Channel",   CV_WINDOW_NORMAL);
+  cvMoveWindow( "Blue Channel",   tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
 
-  cvNamedWindow("Red Blured Image",     CV_WINDOW_NORMAL);
-  cvMoveWindow( "Red Blured Image",     880, 0);
-  cvNamedWindow("Green Blured Image",   CV_WINDOW_NORMAL);
-  cvMoveWindow( "Green Blured Image",   880, 360);
-  cvNamedWindow("Blue Blured Image",    CV_WINDOW_NORMAL);
-  cvMoveWindow( "Blue Blured Image",    880, 700);
+  tmpRow = 0; tmpCol = 2;
+  cvNamedWindow("Red Blured Image",  CV_WINDOW_NORMAL);
+  cvMoveWindow( "Red Blured Image",  tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+  tmpRow = 1; tmpCol = 2;
+  cvNamedWindow("Green Blured Image",CV_WINDOW_NORMAL);
+  cvMoveWindow( "Green Blured Image",tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+  tmpRow = 2; tmpCol = 2;
+  cvNamedWindow("Blue Blured Image", CV_WINDOW_NORMAL);
+  cvMoveWindow( "Blue Blured Image", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
   
-  cvNamedWindow("Red Edges Detected",   CV_WINDOW_NORMAL);
-  cvMoveWindow( "Red Edges Detected",   1290, 0);
-  cvNamedWindow("Green Edges Detected", CV_WINDOW_NORMAL);
-  cvMoveWindow( "Green Edges Detected", 1290, 360);
-  cvNamedWindow("Blue Edges Detected",  CV_WINDOW_NORMAL);
-  cvMoveWindow( "Blue Edges Detected",  1290, 700);
+  tmpRow = 0; tmpCol = 3;
+  cvNamedWindow("Red Edges Detected",  CV_WINDOW_NORMAL);
+  cvMoveWindow( "Red Edges Detected",  tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+  tmpRow = 1; tmpCol = 3;
+  cvNamedWindow("Green Edges Detected",CV_WINDOW_NORMAL);
+  cvMoveWindow( "Green Edges Detected",tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+  tmpRow = 2; tmpCol = 3;
+  cvNamedWindow("Blue Edges Detected", CV_WINDOW_NORMAL);
+  cvMoveWindow( "Blue Edges Detected", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
 
-
-  //cvShowImage("Gray Image", imgGray );
-  //cvShowImage("Red Channel", imgR );
-  //cvShowImage("Green Channel", imgG );
-
-  //cvSmooth(imgB, imgB, CV_GAUSSIAN, 9, 0);
-  //cvShowImage("Blue Blured Image", imgB );
-  
-  cvNamedWindow("Sliders", CV_WINDOW_NORMAL);
-  cvMoveWindow( "Sliders", 1500, 0);
-  cvCreateTrackbar("Blur:", "Sliders",&blurDim,       maxBlurDim,       blurHandler);
-  cvCreateTrackbar("Canny:","Sliders",&lowThreshold,  maxLowThreshold,  blurHandler);
-  cvCreateTrackbar("Hough:","Sliders",&houghThreshold,maxHoughThreshold,blurHandler);
+  //cvNamedWindow("Sliders", CV_WINDOW_NORMAL);
+  //cvMoveWindow( "Sliders", 1500, 0);
+  cvCreateTrackbar("Blur:", "Final Image",&blurDim,       maxBlurDim,       onTrackbarSlide);
+  cvCreateTrackbar("Hough:","Final Image",&houghThreshold,maxHoughThreshold,onTrackbarSlide);
    
+  cvCreateTrackbar("Thresh:",  "Red Edges Detected",&edgeThreshR,maxEdgeThresh,onTrackbarSlide);
+  cvCreateTrackbar("Thresh:","Green Edges Detected",&edgeThreshG,maxEdgeThresh,onTrackbarSlide);
+  cvCreateTrackbar("Thresh:", "Blue Edges Detected",&edgeThreshB,maxEdgeThresh,onTrackbarSlide);
   //blurHandler(0);
 
   
@@ -199,14 +205,14 @@ int main(int argc, char *argv[]) {
             cvSmooth(frameG, frameGblur, CV_GAUSSIAN, blurDim*2+1, 0);
             cvSmooth(frameB, frameBblur, CV_GAUSSIAN, blurDim*2+1, 0);
 
-            cvCanny(frameRblur, frameRedge, lowThreshold, lowThreshold*ratio);
-            cvCanny(frameGblur, frameGedge, lowThreshold, lowThreshold*ratio);
-            cvCanny(frameBblur, frameBedge, lowThreshold, lowThreshold*ratio);
-
+            cvCanny(frameRblur, frameRedge, edgeThreshR, lowThreshold*ratio);
+            cvCanny(frameGblur, frameGedge, edgeThreshG, lowThreshold*ratio);
+            cvCanny(frameBblur, frameBedge, edgeThreshB, lowThreshold*ratio);
 
             houghHandler(0);
 
-            if(1){
+
+            if(1){ // print the images in real time (if you like)
             cvShowImage("Original Image",   frame);
             cvShowImage("Scaled Image",     frameScale);
             
@@ -218,34 +224,53 @@ int main(int argc, char *argv[]) {
             cvShowImage("Green Blured Image",   frameGblur );
             cvShowImage("Blue Blured Image",    frameBblur );
 
-            cvShowImage("Red Edges Detected",   frameRedge );
+            cvShowImage(  "Red Edges Detected",   frameRedge );
             cvShowImage("Green Edges Detected", frameGedge );
-            cvShowImage("Blue Edges Detected",  frameBedge );
+            cvShowImage( "Blue Edges Detected",  frameBedge );
             }
 
+            // count the white
+            unsigned int whiteR = countWhite(frameRedge);
+            unsigned int whiteG = countWhite(frameGedge);
+            unsigned int whiteB = countWhite(frameBedge);
 
-            // create memory for images with only one channel
-            //imgTmp = cvCreateImage(s, d ,1);
-            //cvSplit(img, imgB, imgG, imgR, 0);
-            //lineStorage = cvCreateMemStorage();
-            //imgRes = cvCreateImage(cvSize(DESIRED_WIDTH,height*DESIRED_WIDTH/width),d,1);
-            //imgResColor = cvCreateImage(cvSize(DESIRED_WIDTH,height*DESIRED_WIDTH/width),d,3);
+            edgeThreshR = adjustWhiteThresh(edgeThreshR, whiteR);
+            edgeThreshG = adjustWhiteThresh(edgeThreshG, whiteG);
+            edgeThreshB = adjustWhiteThresh(edgeThreshB, whiteB);
+            if(houghThreshold<1) houghThreshold = 1;
+            else if(houghThreshold>maxHoughThreshold)
+                houghThreshold = maxHoughThreshold;
 
-  //cvResize(imgR, imgRes);
-  //cvResize(img, imgResColor);
-  //CvSize s2 = cvGetSize(imgRes);
-  //imgTmp2 = cvCreateImage(s2, d ,1);
-  //imgE2 = cvCreateImage(s2, d ,1);
-  
-  
-  //printf("Resized image %dx%d image with %d channels\n",imgRes->width,imgRes->height,imgRes->nChannels); 
-
+            cvSetTrackbarPos("Thresh:","Red Edges Detected",  edgeThreshR);
+            cvSetTrackbarPos("Thresh:","Green Edges Detected",edgeThreshG);
+            cvSetTrackbarPos("Thresh:","Blue Edges Detected", edgeThreshB);
+            cvSetTrackbarPos("Hough:", "Final Image",         houghThreshold);
         }
     }
     // release the image
     cvReleaseImage(&img );
     return 0;
 }
+int adjustWhiteThresh(int thresh, int whiteCount) {
+    if(     whiteCount>maxWhite) thresh++;
+    else if(whiteCount<minWhite) thresh--;
+    
+    if(     thresh < 0)             thresh = 0;
+    else if(thresh > maxEdgeThresh) thresh = maxEdgeThresh;
+
+    return thresh;
+}
+unsigned int countWhite(IplImage* image) {
+    int i, j;
+    unsigned int sum = 0;
+    int step = image->widthStep;
+    uchar *data = (uchar *)image->imageData;
+    for(i=0;i<image->height;i++) for(j=0;j<image->width;j++) {
+        if(data[i*step+j]) sum++;
+    }
+    return sum;
+}
+
 void blurHandler(int) {
     //cvSmooth(imgB, imgTmp, CV_GAUSSIAN, blurDim*2+1, 0);
     //cvSmooth(imgRes, imgTmp2, CV_GAUSSIAN, blurDim*2+1, 0);
@@ -254,15 +279,44 @@ void blurHandler(int) {
 }
 void cannyHandler(int) {
     //cvCanny(imgTmp, imgE, lowThreshold, lowThreshold*ratio);
-    cvCanny(imgTmp2, imgE2, lowThreshold, lowThreshold*ratio);
-    cvShowImage("Edges Detected", imgE2 );
-    houghHandler(0);
+    //cvCanny(imgTmp2, imgE2, lowThreshold, lowThreshold*ratio);
+    //cvShowImage("Edges Detected", imgE2 );
+    //houghHandler(0);
 }
 void houghHandler(int){
-    lines = cvHoughLines2(frameBedge ,
-            lineStorage, CV_HOUGH_STANDARD, 1, CV_PI/180, houghThreshold+1);
-    drawHoughLines(0);
+    //lines = cvHoughLines2(frameBedge , lineStorage, CV_HOUGH_STANDARD,
+    //        1, CV_PI/180, houghThreshold+1);
+    lines = cvHoughLines2(frameBedge, lineStorage, CV_HOUGH_PROBABILISTIC,
+            1, CV_PI/180, houghThreshold+1,20,20);
+    //drawHoughLines(0);
+    drawHoughLinesP(0);
 }
+void drawHoughLinesP(int){
+    int i;
+    float a,b,x0,y0;
+    frameTmp = cvCloneImage(frameScale);
+    numLines = lines->total;
+    if(numLines>10) {
+        numLines = 10;
+        houghThreshold++;
+    }
+    else if(numLines<8) {
+        houghThreshold--;
+    }
+    houghThreshold?houghThreshold<1:1;
+    for(i=0; i<numLines; i++) {
+        currentLineP = (CvPoint*) cvGetSeqElem(lines, i);
+        pt1 = currentLineP[0];
+        pt2 = currentLineP[1];
+
+        cvLine(frameTmp,pt1,pt2,cvScalar(0,0,255),1,CV_AA);
+    }
+    printf("\t\t\tNumber of lines detected = %d\n",numLines);
+
+    cvShowImage("Final Image", frameTmp );
+    cvReleaseImage(&frameTmp);
+}
+
 void drawHoughLines(int){
     int i;
     float a,b,x0,y0;

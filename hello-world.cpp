@@ -33,6 +33,7 @@ char* window_name = "Edge map";
 
 
 CvCapture* capture; // open the default camera
+
 IplImage* frame;
 IplImage* img = 0; 
 IplImage* img2 = 0;
