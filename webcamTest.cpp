@@ -4,7 +4,7 @@
 #include <cv.h>
 #include <highgui.h>
 
-#define DESIRED_WIDTH 256
+#define DESIRED_WIDTH 128
 
 
 using namespace cv;
@@ -229,6 +229,7 @@ int main(int argc, char *argv[]) {
             cvShowImage( "Blue Edges Detected",  frameBedge );
             }
 
+            if(1) {
             // count the white
             unsigned int whiteR = countWhite(frameRedge);
             unsigned int whiteG = countWhite(frameGedge);
@@ -245,6 +246,7 @@ int main(int argc, char *argv[]) {
             cvSetTrackbarPos("Thresh:","Green Edges Detected",edgeThreshG);
             cvSetTrackbarPos("Thresh:","Blue Edges Detected", edgeThreshB);
             cvSetTrackbarPos("Hough:", "Final Image",         houghThreshold);
+            }
         }
     }
     // release the image
