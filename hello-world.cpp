@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
   CvSize s2 = cvGetSize(imgRes);
   imgTmp2 = cvCreateImage(s2, d ,1);
   imgE2 = cvCreateImage(s2, d ,1);
-  maxWhite = 0.035*(s2.width*s2.height);
+  maxWhite = 0.095*(s2.width*s2.height);
   minWhite = 0.020*(s2.width*s2.height);
   
   
@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
   
   
     // lopp until a key is pressed
-    while(cvWaitKey(1) == -1) {
+    while(cvWaitKey(100) == -1) {
         if(lowThreshold < 0) lowThreshold = 0;
         if(lowThreshold > maxLowThreshold) lowThreshold = maxLowThreshold;
         if(houghThreshold < 1) houghThreshold = 1;
