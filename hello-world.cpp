@@ -4,7 +4,7 @@
 #include <cv.h>
 #include <highgui.h>
 
-#define DESIRED_WIDTH 256
+#define DESIRED_WIDTH 128
 
 
 using namespace cv;
