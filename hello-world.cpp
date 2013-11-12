@@ -135,6 +135,7 @@ int main(int argc, char *argv[]) {
   int tmpRow = 0;
   int tmpCol = 0;
 
+  tmpRow = 0; tmpCol = 0;
   cvNamedWindow( "Original Image", CV_WINDOW_NORMAL);
   cvMoveWindow(  "Original Image", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
   cvShowImage(   "Original Image", img );
@@ -158,7 +159,7 @@ int main(int argc, char *argv[]) {
   cvNamedWindow("Edges Detected", CV_WINDOW_NORMAL);
   cvMoveWindow( "Edges Detected", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
 
-  tmpRow = 2; tmpCol = 3;
+  tmpRow = 2; tmpCol = 1;
   cvNamedWindow( "Final Image", CV_WINDOW_NORMAL);
   cvMoveWindow(  "Final Image", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
 
@@ -169,7 +170,7 @@ int main(int argc, char *argv[]) {
   //cvSmooth(imgB, imgB, CV_GAUSSIAN, 9, 0);
   //cvShowImage("Blue Blured Image", imgB );
   
-  tmpRow = 0; tmpCol = 3;
+  tmpRow = 1; tmpCol = 2;
   cvNamedWindow("Sliders", CV_WINDOW_NORMAL);
   cvMoveWindow( "Sliders", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
   cvCreateTrackbar("Blur:", "Sliders",&blurDim,       maxBlurDim,       blurHandler);
