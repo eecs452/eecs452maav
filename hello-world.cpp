@@ -119,6 +119,7 @@ int main(int argc, char *argv[]) {
   CvSize s2 = cvGetSize(imgRes);
   imgTmp2 = cvCreateImage(s2, d ,1);
   imgE2 = cvCreateImage(s2, d ,1);
+
   //maxWhite = 4.0*DESIRED_WIDTH+35;
   //minWhite = 3.8*DESIRED_WIDTH+35;
   maxWhite = 5*s2.width;
@@ -242,7 +243,7 @@ void cannyHandler(int) {
 }
 void houghHandler(int){
     //lines = cvHoughLines2(imgE2, lineStorage, CV_HOUGH_STANDARD, 1, CV_PI/180, houghThreshold+1);
-    lines = cvHoughLines2(imgE2, lineStorageP, CV_HOUGH_PROBABILISTIC, 5, CV_PI/90, houghThreshold+1,20,20);
+    lines = cvHoughLines2(imgE2, lineStorageP, CV_HOUGH_PROBABILISTIC, 4, CV_PI/90, houghThreshold+1,20,20);
     //lines = cvHoughLines2(imgE2, lineStorage, CV_HOUGH_MULTI_SCALE, 1, CV_PI/180, houghThreshold+1);
     //drawHoughLines(0);
     drawHoughLinesP(0);
