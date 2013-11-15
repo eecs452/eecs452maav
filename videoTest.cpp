@@ -31,7 +31,7 @@ int const maxGapJump = 50;
 
 int houghThreshold = 100;
 int const maxHoughThreshold = 300;
-int const minHoughThreshold = 100;
+int const minHoughThreshold = 50;
 
 //int edgeThresh = 1;
 int ratio = 3;
@@ -41,11 +41,12 @@ unsigned int maxWhite;
 unsigned int minWhite;
 float rho, theta;
 
+
 float* currentLine;
 CvPoint* currentLineP;
 CvPoint pt1, pt2;
 
-CvCapture* capture; // open the default camera
+CvCapture*     capture = NULL; // open the default camera
 
 IplImage* frame;        // Original Image  (Full Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
@@ -60,22 +61,8 @@ IplImage* frameGedge;   // Edge map
 IplImage* frameBedge;   // Edge map
 IplImage* frameTmp;
 
-//IplImage* img = 0; 
-//IplImage* img2 = 0;
-//IplImage* imgGray = 0;
-//IplImage* imgR = 0;
-//IplImage* imgG = 0;
-//IplImage* imgB = 0;
-//IplImage* imgE = 0;
-//IplImage* imgE2 = 0;
-//IplImage* imgTmp = 0;
-//IplImage* imgTmp2 = 0;
-//IplImage* imgRes = 0;
-//IplImage* imgResColor = 0;
-
 CvSeq* lines;
 CvMemStorage* lineStorage;
-//CvMemStorage* lineStorageP;
 uchar *data;
 
 void onTrackbarSlide(int){;}
@@ -88,35 +75,22 @@ unsigned int countWhite(IplImage*);
 int adjustWhiteThresh(int thresh, int whiteCount);
 
 int main(int argc, char *argv[]) {
-  CvCapture* capture = cvCaptureFromCAM(-1); // open the default camera
-  //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 240);
-  //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH,  320);
-  
-  //SetCaptureProperty(cap, cv.CV_CAP_PROP_FRAME_HEIGHT, 240)
-  //cv.SetCaptureProperty(cap, cv.CV_CAP_PROP_FRAME_WIDTH, 320)
-
-
-  IplImage* frame = cvQueryFrame(capture);  // Grab an initial image for analysis
-  if(frame == NULL) {
-      // For some reason the default camera could not be initialized
-      printf("No image caputre device detected!!\n\n");
-      exit(0);
+  if(argc<2){
+    printf("Usage: main <image-file-name>\n\7");
+    exit(0);
   }
 
+  CvCapture* capture = cvCaptureFromFile(argv[1]); // open the default camera
+  IplImage* frame = cvQueryFrame(capture);  // Grab an initial image for analysis
+  
+  // load an image  
+  if(frame == NULL) {
+    printf("Could not load video file: %s\n",argv[1]);
+    exit(0);
+  }
   int height,width,step,channels;
   int i,j,k;
 
-  //if(argc<2){
-  //  printf("Usage: main <image-file-name>\n\7");
-  //  exit(0);
-  //}
-
-  // load an image  
-  //img=cvLoadImage(argv[1]);
-  //if(!img){
-  //  printf("Could not load image file: %s\n",argv[1]);
-  //  exit(0);
- // }
 
   //width     = frame->width;
   //step      = frame->widthStep;
@@ -255,7 +229,6 @@ int main(int argc, char *argv[]) {
             edgeThreshR = adjustWhiteThresh(edgeThreshR, whiteR);
             edgeThreshG = adjustWhiteThresh(edgeThreshG, whiteG);
             edgeThreshB = adjustWhiteThresh(edgeThreshB, whiteB);
-
             
             if(numLines>10) {
                 numLines = 10;
@@ -277,8 +250,7 @@ int main(int argc, char *argv[]) {
 #endif
         }
     }
-    // release the image
-    //cvReleaseImage(&img );
+    cvReleaseVideoWriter(&create);
     return 0;
 }
 int adjustWhiteThresh(int thresh, int whiteCount) {
@@ -336,6 +308,7 @@ void drawHoughLinesP(int){
     printf("\t\t\tNumber of lines detected = %d\n",numLines);
 
     cvShowImage("Final Image", frameTmp );
+    cvWriteFrame(create, frameTmp);
     cvReleaseImage(&frameTmp);
 }
 

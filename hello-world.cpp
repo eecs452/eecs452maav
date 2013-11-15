@@ -9,15 +9,20 @@
 
 using namespace cv;
 
-int blurDim = 10;
+int blurDim = DESIRED_WIDTH/100;
 int const maxBlurDim = 50;
 
 int lowThreshold = 0;
-int const maxLowThreshold = 100;
+int const maxLowThreshold = 200;
 
-int houghThreshold = 50;
-int const maxHoughThreshold = 100;
+int houghThreshold = 100;
+int const maxHoughThreshold = 200;
 
+int minGapJump = 20;
+int const maxGapJump = 50;
+
+int houghThreshold = 100;
+int const maxHoughThreshold = 300;
 
 int edgeThresh = 1;
 int ratio = 3;
@@ -29,8 +34,6 @@ float rho, theta;
 float* currentLine;
 CvPoint* currentLineP;
 CvPoint pt1, pt2;
-char* window_name = "Edge map";
-
 
 CvCapture* capture; // open the default camera
 
@@ -111,13 +114,15 @@ int main(int argc, char *argv[]) {
   imgRes = cvCreateImage(cvSize(DESIRED_WIDTH,height*DESIRED_WIDTH/width),d,1);
   imgResColor = cvCreateImage(cvSize(DESIRED_WIDTH,height*DESIRED_WIDTH/width),d,3);
 
-  cvResize(imgB, imgRes);
+  cvResize(imgR, imgRes);
   cvResize(img, imgResColor);
   CvSize s2 = cvGetSize(imgRes);
   imgTmp2 = cvCreateImage(s2, d ,1);
   imgE2 = cvCreateImage(s2, d ,1);
-  maxWhite = 0.035*(s2.width*s2.height);
-  minWhite = 0.020*(s2.width*s2.height);
+  //maxWhite = 4.0*DESIRED_WIDTH+35;
+  //minWhite = 3.8*DESIRED_WIDTH+35;
+  maxWhite = 5*s2.width;
+  minWhite = 4*s2.width;
   
   
   printf("Resized image %dx%d image with %d channels\n",imgRes->width,imgRes->height,imgRes->nChannels); 
@@ -149,7 +154,6 @@ int main(int argc, char *argv[]) {
   cvNamedWindow( "Scaled Image", CV_WINDOW_NORMAL);
   cvMoveWindow(  "Scaled Image", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
   cvShowImage(   "Scaled Image", imgRes );
-  //TODO  Use this image in the algorithm instead of the full size one
 
   tmpRow = 1; tmpCol = 1;
   cvNamedWindow("Blue Blured Image", CV_WINDOW_NORMAL);
@@ -225,19 +229,20 @@ void cannyHandler(int) {
     //printf("\t\tmaxWhite = %d\n",maxWhite);
     //printf("\t\tminWhite = %d\n",minWhite);
     if(sum>maxWhite) {
-        printf("\t\t\tTo many white pixles.  Adjust down\n");
+        printf("\t\t\t%d is too many white pixles.  Adjust down\n",sum);
         lowThreshold++;
     }
     else if(sum<minWhite) {
-        printf("\t\t\tTo few white pixles.  Adjust up\n");
+        printf("\t\t\t%d is too few white pixles.  Adjust up\n",sum);
         lowThreshold--;
     }
+    printf("\t\t\t%d white pixlesfound.\n",sum);
 
     houghHandler(0);
 }
 void houghHandler(int){
     //lines = cvHoughLines2(imgE2, lineStorage, CV_HOUGH_STANDARD, 1, CV_PI/180, houghThreshold+1);
-    lines = cvHoughLines2(imgE2, lineStorageP, CV_HOUGH_PROBABILISTIC, 1, CV_PI/180, houghThreshold+1,20,20);
+    lines = cvHoughLines2(imgE2, lineStorageP, CV_HOUGH_PROBABILISTIC, 5, CV_PI/90, houghThreshold+1,20,20);
     //lines = cvHoughLines2(imgE2, lineStorage, CV_HOUGH_MULTI_SCALE, 1, CV_PI/180, houghThreshold+1);
     //drawHoughLines(0);
     drawHoughLinesP(0);
@@ -262,6 +267,8 @@ void drawHoughLinesP(int){
         cvLine(img2,pt1,pt2,cvScalar(0,0,255),1,CV_AA);
     }
     printf("\t\t\tNumber of lines detected = %d\n",numLines);
+    printf("\t\t\theader_size = %d\n",lines->header_size);
+    printf("\t\t\telem_size = %d\n",sizeof(CvPoint)*2);
 
     cvShowImage("Final Image", img2 );
     cvReleaseImage(&img2 );
