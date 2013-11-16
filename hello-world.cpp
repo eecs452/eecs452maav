@@ -15,9 +15,6 @@ int const maxBlurDim = 50;
 int lowThreshold = 0;
 int const maxLowThreshold = 200;
 
-int houghThreshold = 100;
-int const maxHoughThreshold = 200;
-
 int minGapJump = 20;
 int const maxGapJump = 50;
 
