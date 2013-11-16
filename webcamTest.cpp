@@ -89,8 +89,8 @@ int adjustWhiteThresh(int thresh, int whiteCount);
 
 int main(int argc, char *argv[]) {
   CvCapture* capture = cvCaptureFromCAM(-1); // open the default camera
-  //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 240);
-  //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH,  320);
+  cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 240);
+  cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH,  320);
   
   //SetCaptureProperty(cap, cv.CV_CAP_PROP_FRAME_HEIGHT, 240)
   //cv.SetCaptureProperty(cap, cv.CV_CAP_PROP_FRAME_WIDTH, 320)
