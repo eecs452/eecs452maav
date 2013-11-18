@@ -1,0 +1,14 @@
+struct image_lines_t
+{
+    // time information
+    int64_t transmissionTimeStamp;
+    int64_t imageTimeStamp;
+
+    // lines
+    int8_t numLines;
+    line_t line[numLines];
+
+    // circles
+    int8_t numCircles;
+    circle_t circle[numCircles];
+}

@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
 #endif
         }
     }
-    cvReleaseVideoWriter(&create);
+    //cvReleaseVideoWriter(&create);
     return 0;
 }
 int adjustWhiteThresh(int thresh, int whiteCount) {
@@ -308,7 +308,7 @@ void drawHoughLinesP(int){
     printf("\t\t\tNumber of lines detected = %d\n",numLines);
 
     cvShowImage("Final Image", frameTmp );
-    cvWriteFrame(create, frameTmp);
+    //cvWriteFrame(create, frameTmp);
     cvReleaseImage(&frameTmp);
 }
 

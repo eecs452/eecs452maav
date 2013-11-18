@@ -1,0 +1,6 @@
+struct circle_t
+{
+    point_t center;
+    int8_t diameter;
+    int8_t confidence;
+}
