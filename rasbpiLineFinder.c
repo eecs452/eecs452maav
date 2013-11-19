@@ -4,6 +4,8 @@
 #include <cv.h>
 #include <highgui.h>
 #include <time.h>
+#include <lcm/lcm.h>
+#include "lcmtypes/image_lines_t.h"
 
 #define DESIRED_WIDTH 256
 //#define IMAGE_PRINT
