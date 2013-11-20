@@ -11,3 +11,5 @@ lines:
 	gcc -pg -I/usr/local/include/opencv findSimilarLines.c -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
 video:
 	gcc -pg -I/usr/local/include/opencv videoTest.cpp -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
+circle:
+	gcc -pg -I/usr/local/include/opencv circleTest.cpp -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
