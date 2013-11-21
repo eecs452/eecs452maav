@@ -21,6 +21,16 @@ int const maxGapJump = 50;
 int houghThreshold = 100;
 int const maxHoughThreshold = 300;
 
+int circleThreshold = 20;
+int const maxCircleThreshold = 200;
+
+int circleMinRadiusThreshold = 10;
+int const maxCircleMinRadiusThreshold = 200; // completely arbitrary
+
+int circleMaxRadiusThreshold = 80;
+int const maxCircleMaxRadiusThreshold = 500; // completely arbitrary
+
+
 int edgeThresh = 1;
 int ratio = 3;
 int kernal_size = 3;
@@ -28,6 +38,7 @@ int kernal_size = 3;
 unsigned int numCircles;
 unsigned int maxWhite;
 unsigned int minWhite;
+float centerOverlap;
 float rho;//, theta;
 //float* currentLine;
 float* currentCircle; // maybe a CvPoint* ???
@@ -119,7 +130,7 @@ int main(int argc, char *argv[]) {
   imgRes = cvCreateImage(cvSize(DESIRED_WIDTH,height*DESIRED_WIDTH/width),d,1);
   imgResColor = cvCreateImage(cvSize(DESIRED_WIDTH,height*DESIRED_WIDTH/width),d,3);
 
-  cvResize(imgG, imgRes); // was imgR
+  cvResize(imgR, imgRes); // was imgR
   cvResize(img, imgResColor);
   CvSize s2 = cvGetSize(imgRes);
   imgTmp2 = cvCreateImage(s2, d ,1);
@@ -129,7 +140,7 @@ int main(int argc, char *argv[]) {
   //minWhite = 3.8*DESIRED_WIDTH+35;
   maxWhite = 5*s2.width;
   minWhite = 4*s2.width;
-  
+  centerOverlap = s2.width/8; // distance between detected centers  
   
   printf("Resized image %dx%d image with %d channels\n",imgRes->width,imgRes->height,imgRes->nChannels); 
 
@@ -186,8 +197,10 @@ int main(int argc, char *argv[]) {
   cvCreateTrackbar("Blur:", "Sliders",&blurDim,       maxBlurDim,       blurHandler);
   cvCreateTrackbar("Canny:","Sliders",&lowThreshold,  maxLowThreshold,  cannyHandler);
   //cvCreateTrackbar("Hough:","Sliders",&houghThreshold,maxHoughThreshold,houghHandler);   
-  cvCreateTrackbar("Hough:","Sliders",&houghThreshold,maxHoughThreshold,houghCircleHandler);
-
+  cvCreateTrackbar("Hough Circle:","Sliders",&circleThreshold,maxCircleThreshold,houghCircleHandler);
+  cvCreateTrackbar("Radius Min:","Sliders",&circleMinRadiusThreshold,  maxCircleMinRadiusThreshold,  houghCircleHandler); 
+  cvCreateTrackbar("Radius Max:","Sliders",&circleMaxRadiusThreshold,  maxCircleMaxRadiusThreshold,  houghCircleHandler);
+  
   blurHandler(0);
 
   
@@ -197,8 +210,10 @@ int main(int argc, char *argv[]) {
         if(lowThreshold < 0) lowThreshold = 0;
         if(lowThreshold > maxLowThreshold) lowThreshold = maxLowThreshold;
         if(houghThreshold < 1) houghThreshold = 1;
-        cvSetTrackbarPos("Canny:", "Sliders", lowThreshold);
-        cvSetTrackbarPos("Hough:", "Sliders", houghThreshold);
+        cvSetTrackbarPos("Canny:"       , "Sliders", lowThreshold);
+//        cvSetTrackbarPos("Hough:"       , "Sliders", houghThreshold);
+        cvSetTrackbarPos("Hough circle:", "Sliders", circleThreshold);
+        //frame = cvQueryFrame(capture);
         //frame = cvQueryFrame(capture);
         //if(frame) {
         //    cvShowImage("cap", frame);
@@ -260,9 +275,8 @@ void houghHandler(int){
 */
 
 void houghCircleHandler(int){
-    printf("circle handler 1\n");
-    circles = cvHoughCircles(imgE2, circleStorage, CV_HOUGH_GRADIENT, 1, 1, 200, 100, 0, 0);
-    printf("circle handler 2\n");
+
+    circles = cvHoughCircles(imgE2, circleStorage, CV_HOUGH_GRADIENT, 1, centerOverlap, 200, circleThreshold, circleMinRadiusThreshold, circleMaxRadiusThreshold);
     drawHoughCircles(0);
 
 }
