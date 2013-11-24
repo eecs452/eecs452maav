@@ -1,5 +1,4 @@
-struct image_lines_t
-{
+struct image_lines_t {
     // time information
     int64_t transmissionTimeStamp;
     int64_t imageTimeStamp;

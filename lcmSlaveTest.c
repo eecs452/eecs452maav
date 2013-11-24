@@ -4,15 +4,12 @@
 #include <math.h>
 #include <highgui.h>
 #include "common/timestamp.h"
-//#include <time.h>
 #include <lcm/lcm.h>
 #include "lcmtypes/image_lines_t.h"
 #include "lcmtypes/point_t.h"
 
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
-#define PRINT_HOUGH_LINES
-
 
 IplImage* frame;        // Original Image  (Full Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
@@ -56,6 +53,13 @@ int main(int argc, char *argv[]) {
         printf("Could not load image file: %s\n",argv[1]);
         exit(0);
     }
+    
+	lcm_t *lcm;
+    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
+    //lcm = lcm_create("tcpq://192.168.1.102?ttl=0");
+    if(!lcm)
+        return 1;
+
     initWindows();
     lineStorage = cvCreateMemStorage(0);
 
@@ -128,19 +132,25 @@ int main(int argc, char *argv[]) {
         uint8_t* buff = (uint8_t*)malloc(encodedSize);
         if(!buff) return -1;
         lineAndCircleInfo.transmissionTimeStamp = timestamp_now();
-        __image_lines_t_encode_array(buff, 0, encodedSize, &lineAndCircleInfo,1);
+        //__image_lines_t_encode_array(buff, 0, encodedSize,
+        //                                &lineAndCircleInfo,1);
 
+        image_lines_t_publish(lcm, "LINES_AND_CIRCLES_AND_IMAGES, OH_MY",&lineAndCircleInfo);
+        
         if(houghThreshold++ > 100) houghThreshold = 50;
 
         free(line);
         free(circle);
         free(buff);
     }
+    cvReleaseImage(&frame);
     cvReleaseImage(&frameR);
     cvReleaseImage(&frameG);
     cvReleaseImage(&frameB);
+    cvReleaseImage(&frameScale);
     cvReleaseImage(&frameBlur);
     cvReleaseImage(&frameEdge);
+    cvClearMemStorage(lineStorage);
     return 0;
 }
 CvSeq* findHoughLinesP(void){ // just to make main cleaner
@@ -167,8 +177,6 @@ void drawHoughLinesP(CvSeq* lines){
     cvShowImage("Probablistic Hough", frameTmp );
     cvReleaseImage(&frameTmp);
 
-    //free(lineAndCircleInfo.line);
-    
     return;
 }
 void initWindows(void) {
@@ -183,12 +191,15 @@ void initWindows(void) {
     // Open windows for images
     tmpRow = 0; tmpCol = 0;
     cvNamedWindow("Original Image", CV_WINDOW_NORMAL);
-    cvMoveWindow( "Original Image", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+    cvMoveWindow( "Original Image", tmpCol*scaleCol+offsetCol,
+            tmpRow*scaleRow+offsetRow);
     tmpRow = 0; tmpCol = 1;
     cvNamedWindow("Edges Detected", CV_WINDOW_NORMAL);
-    cvMoveWindow( "Edges Detected", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+    cvMoveWindow( "Edges Detected", tmpCol*scaleCol+offsetCol,
+            tmpRow*scaleRow+offsetRow);
     tmpRow = 0; tmpCol = 2;
     cvNamedWindow("Probablistic Hough", CV_WINDOW_NORMAL);
-    cvMoveWindow( "Probablistic Hough", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
+    cvMoveWindow( "Probablistic Hough", tmpCol*scaleCol+offsetCol,
+            tmpRow*scaleRow+offsetRow);
 }
 
