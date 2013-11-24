@@ -20,9 +20,9 @@ int64_t __point_t_hash_recursive(const __lcm_hash_ptr *p)
     const __lcm_hash_ptr cp = { p, (void*)__point_t_get_hash };
     (void) cp;
 
-    int64_t hash = 0xd4505cd624c15799LL
-         + __int8_t_hash_recursive(&cp)
-         + __int8_t_hash_recursive(&cp)
+    int64_t hash = 0xabddc706ad074f64LL
+         + __int16_t_hash_recursive(&cp)
+         + __int16_t_hash_recursive(&cp)
         ;
 
     return (hash<<1) + ((hash>>63)&1);
@@ -44,10 +44,10 @@ int __point_t_encode_array(void *buf, int offset, int maxlen, const point_t *p, 
 
     for (element = 0; element < elements; element++) {
 
-        thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].x), 1);
+        thislen = __int16_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].x), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
-        thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].y), 1);
+        thislen = __int16_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].y), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
     }
@@ -73,9 +73,9 @@ int __point_t_encoded_array_size(const point_t *p, int elements)
     int size = 0, element;
     for (element = 0; element < elements; element++) {
 
-        size += __int8_t_encoded_array_size(&(p[element].x), 1);
+        size += __int16_t_encoded_array_size(&(p[element].x), 1);
 
-        size += __int8_t_encoded_array_size(&(p[element].y), 1);
+        size += __int16_t_encoded_array_size(&(p[element].y), 1);
 
     }
     return size;
@@ -92,10 +92,10 @@ int __point_t_decode_array(const void *buf, int offset, int maxlen, point_t *p, 
 
     for (element = 0; element < elements; element++) {
 
-        thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].x), 1);
+        thislen = __int16_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].x), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
-        thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].y), 1);
+        thislen = __int16_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].y), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
     }
@@ -107,9 +107,9 @@ int __point_t_decode_array_cleanup(point_t *p, int elements)
     int element;
     for (element = 0; element < elements; element++) {
 
-        __int8_t_decode_array_cleanup(&(p[element].x), 1);
+        __int16_t_decode_array_cleanup(&(p[element].x), 1);
 
-        __int8_t_decode_array_cleanup(&(p[element].y), 1);
+        __int16_t_decode_array_cleanup(&(p[element].y), 1);
 
     }
     return 0;
@@ -141,9 +141,9 @@ int __point_t_clone_array(const point_t *p, point_t *q, int elements)
     int element;
     for (element = 0; element < elements; element++) {
 
-        __int8_t_clone_array(&(p[element].x), &(q[element].x), 1);
+        __int16_t_clone_array(&(p[element].x), &(q[element].x), 1);
 
-        __int8_t_clone_array(&(p[element].y), &(q[element].y), 1);
+        __int16_t_clone_array(&(p[element].y), &(q[element].y), 1);
 
     }
     return 0;

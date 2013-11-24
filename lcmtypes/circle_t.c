@@ -20,9 +20,9 @@ int64_t __circle_t_hash_recursive(const __lcm_hash_ptr *p)
     const __lcm_hash_ptr cp = { p, (void*)__circle_t_get_hash };
     (void) cp;
 
-    int64_t hash = 0xf9063917378793d7LL
+    int64_t hash = 0xa0dd47ec140cddcfLL
          + __point_t_hash_recursive(&cp)
-         + __int8_t_hash_recursive(&cp)
+         + __int16_t_hash_recursive(&cp)
          + __int8_t_hash_recursive(&cp)
         ;
 
@@ -48,7 +48,7 @@ int __circle_t_encode_array(void *buf, int offset, int maxlen, const circle_t *p
         thislen = __point_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].center), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
-        thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].diameter), 1);
+        thislen = __int16_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].diameter), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
         thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].confidence), 1);
@@ -79,7 +79,7 @@ int __circle_t_encoded_array_size(const circle_t *p, int elements)
 
         size += __point_t_encoded_array_size(&(p[element].center), 1);
 
-        size += __int8_t_encoded_array_size(&(p[element].diameter), 1);
+        size += __int16_t_encoded_array_size(&(p[element].diameter), 1);
 
         size += __int8_t_encoded_array_size(&(p[element].confidence), 1);
 
@@ -101,7 +101,7 @@ int __circle_t_decode_array(const void *buf, int offset, int maxlen, circle_t *p
         thislen = __point_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].center), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
-        thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].diameter), 1);
+        thislen = __int16_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].diameter), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
         thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].confidence), 1);
@@ -118,7 +118,7 @@ int __circle_t_decode_array_cleanup(circle_t *p, int elements)
 
         __point_t_decode_array_cleanup(&(p[element].center), 1);
 
-        __int8_t_decode_array_cleanup(&(p[element].diameter), 1);
+        __int16_t_decode_array_cleanup(&(p[element].diameter), 1);
 
         __int8_t_decode_array_cleanup(&(p[element].confidence), 1);
 
@@ -154,7 +154,7 @@ int __circle_t_clone_array(const circle_t *p, circle_t *q, int elements)
 
         __point_t_clone_array(&(p[element].center), &(q[element].center), 1);
 
-        __int8_t_clone_array(&(p[element].diameter), &(q[element].diameter), 1);
+        __int16_t_clone_array(&(p[element].diameter), &(q[element].diameter), 1);
 
         __int8_t_clone_array(&(p[element].confidence), &(q[element].confidence), 1);
 

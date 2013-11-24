@@ -21,7 +21,7 @@ typedef struct _circle_t circle_t;
 struct _circle_t
 {
     point_t    center;
-    int8_t     diameter;
+    int16_t    diameter;
     int8_t     confidence;
 };
 

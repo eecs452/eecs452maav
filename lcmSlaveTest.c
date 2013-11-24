@@ -3,24 +3,32 @@
 #include <stdio.h>
 #include <math.h>
 #include <highgui.h>
+#include "common/timestamp.h"
+//#include <time.h>
+#include <lcm/lcm.h>
+#include "lcmtypes/image_lines_t.h"
+#include "lcmtypes/point_t.h"
 
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
+#define PRINT_HOUGH_LINES
+
 
 IplImage* frame;        // Original Image  (Full Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
-IplImage* frameC;       // One Coponent    (scaled)
-IplImage* frameCblur;   // Componenet Blured image
+IplImage* frameR;       // Red Coponent    (scaled)
+IplImage* frameG;       // Green Coponent    (scaled)
+IplImage* frameB;       // Blue Coponent    (scaled)
+IplImage* frameBlur;    // Blured image
 IplImage* frameEdge;    // Edge map
 IplImage* frameTmp;
 
-CvPoint *currentLine;
-CvPoint pt1, pt2;
-CvSeq *lines;
 CvMemStorage* lineStorage;
 
 int rhoRes = 4;
 float thetaRes = CV_PI/45;
+
+int edgeThresh = 100;
 
 int minLineLength = 20;
 int const maxLineLength = 300;
@@ -28,12 +36,16 @@ int const maxLineLength = 300;
 int minGapJump = 20;
 int const maxGapJump = 50;
 
-int houghThreshold = 100;
+int houghThreshold = 50;
 int const maxHoughThreshold = 300;
+
+int blurDim = 2;
 
 int i;
 
-void drawHoughLinesP(int);
+void initWindows(void);
+CvSeq* findHoughLinesP(void);
+void drawHoughLinesP(CvSeq* lines);
 int main(int argc, char *argv[]) {
     if(argc<2){
         printf("Usage: main <image-file-name> \n\7");
@@ -44,20 +56,122 @@ int main(int argc, char *argv[]) {
         printf("Could not load image file: %s\n",argv[1]);
         exit(0);
     }
-    
+    initWindows();
     lineStorage = cvCreateMemStorage(0);
 
     CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
     int    d = frame->depth;
-    imgColor = cvCreateImage(s,d,3);
-    cvResize(frame, frameColor);
+    frameScale = cvCreateImage(s,d,3);
+
+    // create memory for images with only one channel
+    frameR =      cvCreateImage(s, d ,1);
+    frameG =      cvCreateImage(s, d ,1);
+    frameB =      cvCreateImage(s, d ,1);
+    frameBlur =   cvCreateImage(s, d ,1);
+    frameEdge =   cvCreateImage(s, d ,1);
     
+    cvResize(frame, frameScale, CV_INTER_LINEAR);
+    cvSplit(frameScale, frameB, frameG, frameR, 0);
+    cvSmooth(frameR, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
+    cvCanny(frameBlur, frameEdge, edgeThresh, edgeThresh*3,3);
 
-    cvSmooth(frameB, imgTmp2, CV_GAUSSIAN, blurDim*2+1, 0);
+    cvShowImage("Original Image", frameScale);
+    cvShowImage("Edges Detected", frameEdge);
 
+    printf("\n\n");
+    line_t *linePtr;
+    image_lines_t lineAndCircleInfo;
+    line_t* line;
+    circle_t* circle;
+    while(cvWaitKey(100) == -1) {
+        CvSeq* lines;
+        CvPoint pt1, pt2;
+        CvPoint *currentLine;
 
+        lineAndCircleInfo.imageTimeStamp = timestamp_now();
+        
+        lines = findHoughLinesP();
+        drawHoughLinesP(lines);
 
+        int numLines   = lines->total;
+        int numCircles = 0;
+        lineAndCircleInfo.numLines   = numLines;
+        lineAndCircleInfo.numCircles = numCircles;
 
+        lineAndCircleInfo.line  =(line_t*)  malloc(numLines  *sizeof(line_t));
+        lineAndCircleInfo.circle=(circle_t*)malloc(numCircles*sizeof(circle_t));
+        line_t* line     = lineAndCircleInfo.line;
+        circle_t* circle = lineAndCircleInfo.circle;
+
+        printf("I've found %2d lines for you! :Time = %lli\n",numLines,
+                                            lineAndCircleInfo.imageTimeStamp);
+        for(i=0; i<numLines; i++) {
+            currentLine = (CvPoint*) cvGetSeqElem(lines, i);
+            pt1 = currentLine[0];
+            pt2 = currentLine[1];
+
+            line[i].point[0].x = pt1.x;
+            line[i].point[0].y = pt1.y;
+            line[i].point[1].x = pt2.x;
+            line[i].point[1].y = pt2.y;
+            line[i].confidence = 50;
+
+            printf("\tLine %2d=(%4d,%4d),(%4d,%4d)\n",i+1,
+                                    lineAndCircleInfo.line[i].point[0].x,
+                                    lineAndCircleInfo.line[i].point[0].y,
+                                    lineAndCircleInfo.line[i].point[1].x,
+                                    lineAndCircleInfo.line[i].point[1].y);
+        }
+        printf("\n\n\n");
+
+        int encodedSize = image_lines_t_encoded_size(&lineAndCircleInfo);
+        uint8_t* buff = (uint8_t*)malloc(encodedSize);
+        if(!buff) return -1;
+        lineAndCircleInfo.transmissionTimeStamp = timestamp_now();
+        __image_lines_t_encode_array(buff, 0, encodedSize, &lineAndCircleInfo,1);
+
+        if(houghThreshold++ > 100) houghThreshold = 50;
+
+        free(line);
+        free(circle);
+        free(buff);
+    }
+    cvReleaseImage(&frameR);
+    cvReleaseImage(&frameG);
+    cvReleaseImage(&frameB);
+    cvReleaseImage(&frameBlur);
+    cvReleaseImage(&frameEdge);
+    return 0;
+}
+CvSeq* findHoughLinesP(void){ // just to make main cleaner
+    return cvHoughLines2(   frameEdge,
+                            lineStorage,
+                            CV_HOUGH_PROBABILISTIC,
+                            rhoRes,
+                            thetaRes,
+                            houghThreshold+1,
+                            minLineLength,
+                            minGapJump);
+}
+void drawHoughLinesP(CvSeq* lines){
+    frameTmp = cvCloneImage(frameScale);
+    int i;
+    CvPoint *currentLine;
+    CvPoint pt1, pt2;
+    for(i=0; i<lines->total; i++) {
+        currentLine = (CvPoint*) cvGetSeqElem(lines, i);
+        pt1 = currentLine[0];
+        pt2 = currentLine[1];
+        cvLine(frameTmp,pt1,pt2,cvScalar(0,0,255,0),0,CV_AA,0);
+    }
+    cvShowImage("Probablistic Hough", frameTmp );
+    cvReleaseImage(&frameTmp);
+
+    //free(lineAndCircleInfo.line);
+    
+    return;
+}
+void initWindows(void) {
     // show the images
     int scaleRow = 330;
     int scaleCol = 420;
@@ -70,57 +184,11 @@ int main(int argc, char *argv[]) {
     tmpRow = 0; tmpCol = 0;
     cvNamedWindow("Original Image", CV_WINDOW_NORMAL);
     cvMoveWindow( "Original Image", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
-    cvShowImage(  "Original Image", frameColor);
     tmpRow = 0; tmpCol = 1;
     cvNamedWindow("Edges Detected", CV_WINDOW_NORMAL);
     cvMoveWindow( "Edges Detected", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
-    cvShowImage(  "Edges Detected", frameEdge);
     tmpRow = 0; tmpCol = 2;
     cvNamedWindow("Probablistic Hough", CV_WINDOW_NORMAL);
     cvMoveWindow( "Probablistic Hough", tmpCol*scaleCol+offsetCol, tmpRow*scaleRow+offsetRow);
-
-
-    printf("\n\n");
-
-    drawHoughLinesP(0);
-
-
-    cvWaitKey(0);
-    return 0;
-}
-static int compareTheta( const void* _a, const void* _b, void* userdata ) {
-    float* a = (float*)_a;
-    float* b = (float*)_b;
-    //printf("\t\tcomparing %5.2f with %5.2f\n",a[1], b[1]);
-    if(a[0] < b[0]) return -1;
-    if(a[0] > b[0]) return  1;
-    return 0;
-}
-void drawHoughLinesP(int z){
-    linesP = cvHoughLines2(frameEdge, lineStorageP, CV_HOUGH_PROBABILISTIC,
-           rhoRes, thetaRes, houghThreshold+1, minLineLength, minGapJump);
-    int i;
-    frameTmp = cvCloneImage(frameColor);
-    int numLines = linesP->total;
-    printf("\t\tNumber of probablistic lines detected = %d\n",numLines);
-
-    for(i=0; i<numLines; i++) {
-        currentLineP = (CvPoint*) cvGetSeqElem(linesP, i);
-        pt1 = currentLineP[0];
-        pt2 = currentLineP[1];
-
-        int a = pt1.x-pt2.x;
-        int b = pt1.y-pt2.y;
-        if(0) { // if you want the lines to be exteded
-            pt1.x += 100*a;
-            pt1.y += 100*b;
-            pt2.x -= 100*a;
-            pt2.y -= 100*b;
-        }
-        cvLine(frameTmp,pt1,pt2,cvScalar(0,0,255,0),0,CV_AA,0);
-    }
-    cvShowImage("Probablistic Hough", frameTmp );
-    cvReleaseImage(&frameTmp);
-    return;
 }
 

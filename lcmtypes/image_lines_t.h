@@ -23,9 +23,9 @@ struct _image_lines_t
 {
     int64_t    transmissionTimeStamp;
     int64_t    imageTimeStamp;
-    int8_t     numLines;
+    int16_t    numLines;
     line_t     *line;
-    int8_t     numCircles;
+    int16_t    numCircles;
     circle_t   *circle;
 };
 

@@ -20,12 +20,12 @@ int64_t __image_lines_t_hash_recursive(const __lcm_hash_ptr *p)
     const __lcm_hash_ptr cp = { p, (void*)__image_lines_t_get_hash };
     (void) cp;
 
-    int64_t hash = 0x9511a162f953b723LL
+    int64_t hash = 0x8962cc780d9830e2LL
          + __int64_t_hash_recursive(&cp)
          + __int64_t_hash_recursive(&cp)
-         + __int8_t_hash_recursive(&cp)
+         + __int16_t_hash_recursive(&cp)
          + __line_t_hash_recursive(&cp)
-         + __int8_t_hash_recursive(&cp)
+         + __int16_t_hash_recursive(&cp)
          + __circle_t_hash_recursive(&cp)
         ;
 
@@ -54,13 +54,13 @@ int __image_lines_t_encode_array(void *buf, int offset, int maxlen, const image_
         thislen = __int64_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].imageTimeStamp), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
-        thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].numLines), 1);
+        thislen = __int16_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].numLines), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
         thislen = __line_t_encode_array(buf, offset + pos, maxlen - pos, p[element].line, p[element].numLines);
         if (thislen < 0) return thislen; else pos += thislen;
 
-        thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].numCircles), 1);
+        thislen = __int16_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].numCircles), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
         thislen = __circle_t_encode_array(buf, offset + pos, maxlen - pos, p[element].circle, p[element].numCircles);
@@ -93,11 +93,11 @@ int __image_lines_t_encoded_array_size(const image_lines_t *p, int elements)
 
         size += __int64_t_encoded_array_size(&(p[element].imageTimeStamp), 1);
 
-        size += __int8_t_encoded_array_size(&(p[element].numLines), 1);
+        size += __int16_t_encoded_array_size(&(p[element].numLines), 1);
 
         size += __line_t_encoded_array_size(p[element].line, p[element].numLines);
 
-        size += __int8_t_encoded_array_size(&(p[element].numCircles), 1);
+        size += __int16_t_encoded_array_size(&(p[element].numCircles), 1);
 
         size += __circle_t_encoded_array_size(p[element].circle, p[element].numCircles);
 
@@ -122,14 +122,14 @@ int __image_lines_t_decode_array(const void *buf, int offset, int maxlen, image_
         thislen = __int64_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].imageTimeStamp), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
-        thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].numLines), 1);
+        thislen = __int16_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].numLines), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
         p[element].line = (line_t*) lcm_malloc(sizeof(line_t) * p[element].numLines);
         thislen = __line_t_decode_array(buf, offset + pos, maxlen - pos, p[element].line, p[element].numLines);
         if (thislen < 0) return thislen; else pos += thislen;
 
-        thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].numCircles), 1);
+        thislen = __int16_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].numCircles), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
         p[element].circle = (circle_t*) lcm_malloc(sizeof(circle_t) * p[element].numCircles);
@@ -149,12 +149,12 @@ int __image_lines_t_decode_array_cleanup(image_lines_t *p, int elements)
 
         __int64_t_decode_array_cleanup(&(p[element].imageTimeStamp), 1);
 
-        __int8_t_decode_array_cleanup(&(p[element].numLines), 1);
+        __int16_t_decode_array_cleanup(&(p[element].numLines), 1);
 
         __line_t_decode_array_cleanup(p[element].line, p[element].numLines);
         if (p[element].line) free(p[element].line);
 
-        __int8_t_decode_array_cleanup(&(p[element].numCircles), 1);
+        __int16_t_decode_array_cleanup(&(p[element].numCircles), 1);
 
         __circle_t_decode_array_cleanup(p[element].circle, p[element].numCircles);
         if (p[element].circle) free(p[element].circle);
@@ -193,12 +193,12 @@ int __image_lines_t_clone_array(const image_lines_t *p, image_lines_t *q, int el
 
         __int64_t_clone_array(&(p[element].imageTimeStamp), &(q[element].imageTimeStamp), 1);
 
-        __int8_t_clone_array(&(p[element].numLines), &(q[element].numLines), 1);
+        __int16_t_clone_array(&(p[element].numLines), &(q[element].numLines), 1);
 
         q[element].line = (line_t*) lcm_malloc(sizeof(line_t) * q[element].numLines);
         __line_t_clone_array(p[element].line, q[element].line, p[element].numLines);
 
-        __int8_t_clone_array(&(p[element].numCircles), &(q[element].numCircles), 1);
+        __int16_t_clone_array(&(p[element].numCircles), &(q[element].numCircles), 1);
 
         q[element].circle = (circle_t*) lcm_malloc(sizeof(circle_t) * q[element].numCircles);
         __circle_t_clone_array(p[element].circle, q[element].circle, p[element].numCircles);

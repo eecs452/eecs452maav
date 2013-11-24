@@ -19,8 +19,8 @@ extern "C" {
 typedef struct _point_t point_t;
 struct _point_t
 {
-    int8_t     x;
-    int8_t     y;
+    int16_t    x;
+    int16_t    y;
 };
 
 point_t   *point_t_copy(const point_t *p);

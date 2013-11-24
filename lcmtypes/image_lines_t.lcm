@@ -5,10 +5,10 @@ struct image_lines_t
     int64_t imageTimeStamp;
 
     // lines
-    int8_t numLines;
+    int16_t numLines;
     line_t line[numLines];
 
     // circles
-    int8_t numCircles;
+    int16_t numCircles;
     circle_t circle[numCircles];
 }
