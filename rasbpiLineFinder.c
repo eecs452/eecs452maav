@@ -1,14 +1,17 @@
+#include <unistd.h>			//Used for UART
+#include <fcntl.h>			//Used for UART
+#include <termios.h>		//Used for UART
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <cv.h>
 #include <highgui.h>
 #include <time.h>
-#include <lcm/lcm.h>
-#include "lcmtypes/image_lines_t.h"
+//#include <lcm/lcm.h>
+//#include "lcmtypes/image_lines_t.h"
 
 #define DESIRED_WIDTH 256
-//#define IMAGE_PRINT
+#define IMAGE_PRINT
 //#define AUTO_ADJUST_THRESH
 
 //using namespace cv;
@@ -48,6 +51,8 @@ float* currentLine;
 CvPoint* currentLineP;
 CvPoint pt1, pt2;
 
+int uart0_filestream;
+
 CvCapture* capture; // open the default camera
 
 IplImage* frame;        // Original Image  (Full Resolution)
@@ -78,6 +83,32 @@ unsigned int countWhite(IplImage*);
 int adjustWhiteThresh(int thresh, int whiteCount);
 
 int main(int argc, char *argv[]) {
+    unsigned char tx_buffer[] = "Hello World!!!!";
+	uart0_filestream = -1;
+    tx_buffer[13] = 10;
+    tx_buffer[14] = 13;
+
+    //Open in non blocking read/write mode
+	uart0_filestream = open("/dev/ttyAMA0",
+                        O_WRONLY | O_NOCTTY | O_NDELAY);
+	if (uart0_filestream == -1) {
+		//ERROR - CAN'T OPEN SERIAL PORT
+		printf("Error - Unable to open UART.  Ensure it is not in use by another application\n");
+	}
+	struct termios options;  
+	tcgetattr(uart0_filestream, &options);
+	options.c_cflag = B115200 | CS8 | CLOCAL | CREAD;
+	options.c_iflag = IGNPAR;
+	options.c_oflag = 0;
+	options.c_lflag = 0;
+	tcflush(uart0_filestream, TCIFLUSH);
+	tcsetattr(uart0_filestream, TCSANOW, &options);
+
+	if (uart0_filestream != -1) {
+		int count = write(uart0_filestream, tx_buffer, 15);
+		if (count < 0) printf("UART TX error\n");
+	}
+
   CvCapture* capture = cvCaptureFromCAM(-1); // open the default camera
   //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH,  320);
   //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 240);
@@ -201,8 +232,15 @@ void houghHandler(int foo){
     lines = cvHoughLines2(frameBedge, lineStorage, CV_HOUGH_PROBABILISTIC,
             rhoRes, thetaRes, houghThreshold+1,minLineLength,minGapJump);
     //drawHoughLines(0);
+
     printf("\t\t\tNumber of lines detected = %d\n", lines->total);
-    drawHoughLinesP(0);
+    unsigned char newBuff[] = "this is a test!!";
+    newBuff[14] = 10;
+    newBuff[15] = 13;
+
+	int count = write(uart0_filestream, newBuff, 16);
+	if (count < 0) printf("UART TX error\n");
+    //drawHoughLinesP(0);
 }
 void drawHoughLinesP(int foo){
     int i;
