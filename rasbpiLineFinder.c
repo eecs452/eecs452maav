@@ -7,14 +7,14 @@
 #include <cv.h>
 #include <highgui.h>
 #include <time.h>
-//#include <lcm/lcm.h>
-//#include "lcmtypes/image_lines_t.h"
+#include <lcm/lcm.h>
+#include "lcmtypes/image_lines_t.h"
 
 #define DESIRED_WIDTH 256
 #define IMAGE_PRINT
 //#define AUTO_ADJUST_THRESH
+#define COMM_TYPE LCM  // LCM, SERIAL, or NONE
 
-//using namespace cv;
 
 int blurDim = DESIRED_WIDTH/100;
 int const maxBlurDim = 10;
@@ -72,17 +72,17 @@ IplImage* frameTmp;
 CvSeq* lines;
 CvMemStorage* lineStorage;
 uchar *data;
+lcm_t lcm*;
 
-void onTrackbarSlide(int foo){;}
-void blurHandler(int);
-void cannyHandler(int);
 void houghHandler(int);
-void drawHoughLines(int);
 void drawHoughLinesP(int);
 unsigned int countWhite(IplImage*);
 int adjustWhiteThresh(int thresh, int whiteCount);
 
 int main(int argc, char *argv[]) {
+#if COMM_TYPE = LCM
+    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
+#elif COMM_TYPE = SERIAL
     unsigned char tx_buffer[] = "Hello World!!!!";
 	uart0_filestream = -1;
     tx_buffer[13] = 10;
@@ -108,90 +108,53 @@ int main(int argc, char *argv[]) {
 		int count = write(uart0_filestream, tx_buffer, 15);
 		if (count < 0) printf("UART TX error\n");
 	}
+#endif
 
-  CvCapture* capture = cvCaptureFromCAM(-1); // open the default camera
-  //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH,  320);
-  //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 240);
-  cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH,  176);
-  cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 144);
+    CvCapture* capture = cvCaptureFromCAM(-1); // open the default camera
+    cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH,  176);
+    cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 144);
   
-  IplImage* frame = cvQueryFrame(capture);  // Grab an initial image for analysis
-  if(frame == NULL) {
-      // For some reason the default camera could not be initialized
-      printf("No image caputre device detected!!\n\n");
-      exit(0);
-  }
+    IplImage* frame = cvQueryFrame(capture);  // Grab an initial image for analysis
+    if(frame == NULL) {
+        // For some reason the default camera could not be initialized
+        printf("No image caputre device detected!!\n\n");
+        exit(0);
+    }
 
-  int height,width,step,channels;
-  int i,j,k;
+    int height,width,step,channels;
+    int i,j,k;
 
-  printf("Processing a %dx%d image with %d channels\n",
+    printf("Processing a %dx%d image with %d channels\n",
                                   frame->width,frame->height,frame->nChannels); 
 
-  CvSize s = cvGetSize(frame);
-  int d = frame->depth;
-  //frameScale = cvCreateImage(cvSize(DESIRED_WIDTH,frame->height*DESIRED_WIDTH/frame->width),d,3);
-  //cvResize(frame, frameScale, CV_INTER_LINEAR);
-  //printf("Resized image to %dx%d with %d channels\n",
-  //              frameScale->width,frameScale->height,frameScale->nChannels); 
-  //s = cvGetSize(frameScale);
-  //d = frameScale->depth;
+    CvSize s = cvGetSize(frame);
+    int d = frame->depth;
+    maxWhite = 0.035*(s.width*s.height);
+    minWhite = 0.020*(s.width*s.height);
 
-  maxWhite = 0.035*(s.width*s.height);
-  minWhite = 0.020*(s.width*s.height);
+    // create memory for images with only one channel
+    frameR =      cvCreateImage(s, d ,1);
+    frameG =      cvCreateImage(s, d ,1);
+    frameB =      cvCreateImage(s, d ,1);
+    frameBlur =  cvCreateImage(s, d ,1);
+    frameEdge =  cvCreateImage(s, d ,1);
 
-  // create memory for images with only one channel
-  frameR =      cvCreateImage(s, d ,1);
-  frameG =      cvCreateImage(s, d ,1);
-  frameB =      cvCreateImage(s, d ,1);
-  frameRblur =  cvCreateImage(s, d ,1);
-  frameGblur =  cvCreateImage(s, d ,1);
-  frameBblur =  cvCreateImage(s, d ,1);
-  frameRedge =  cvCreateImage(s, d ,1);
-  frameGedge =  cvCreateImage(s, d ,1);
-  frameBedge =  cvCreateImage(s, d ,1);
+    lineStorage = cvCreateMemStorage(0);
 
-  lineStorage = cvCreateMemStorage(0);
-
-  time_t start, end;
-  double fps;
-  int counter = 0;
-  double sec;
-
-  time(&start);
-    // lopp until a key is pressed
-    //while(cvWaitKey(10) == -1) {
-       while(cvGrabFrame(capture)) {
-            frame = cvRetrieveFrame(capture,0);
-
-            //cvResize(frame, frameScale,CV_INTER_LINEAR);
-            cvSplit(frame, frameB, frameG, frameR, 0);
-            //cvSmooth(frameR, frameRblur, CV_GAUSSIAN, blurDim*2+1, 0);
-            //cvSmooth(frameG, frameGblur, CV_GAUSSIAN, blurDim*2+1, 0);
-            cvSmooth(frameB, frameBblur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
-
-            //cvCanny(frameRblur, frameRedge, edgeThreshR, edgeThreshR*ratio);
-            //cvCanny(frameGblur, frameGedge, edgeThreshG, edgeThreshG*ratio);
-            cvCanny(frameBblur, frameBedge, edgeThreshB, edgeThreshB*ratio,3);
-
-            houghHandler(0);
-
-            //cvShowImage("Original Image",   frame);
-            //cvShowImage("Scaled Image",     frameScale);
-            //cvShowImage("Blue Channel",     frameB );
-            //cvShowImage("Blue Blured Image",    frameBblur );
-            //cvShowImage( "Blue Edges Detected",  frameBedge );
-
-            if((++counter)%100 == 0){
-                time(&end);
-                sec = difftime(end, start);
-                fps = counter/sec;
-                printf("\t\tFPS = %.2f\n",fps);
-            }
-        //}
+    while(cvGrabFrame(capture)) {
+        frame = cvRetrieveFrame(capture,0);
+        cvSplit(frame, frameB, frameG, frameR, 0);
+        cvSmooth(frameB, frameBblur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
+        cvCanny(frameBblur, frameBedge, edgeThreshB, edgeThreshB*ratio,3);
+        houghHandler(0);
     }
-    // release the image
-    //cvReleaseImage(&img );
+    cvReleaseImage(&frame);
+    cvReleaseImage(&frameR);
+    cvReleaseImage(&frameG);
+    cvReleaseImage(&frameB);
+    cvReleaseImage(&frameBlur);
+    cvReleaseImage(&frameEdge);
+    cvReleaseImage(&frame);
     return 0;
 }
 int adjustWhiteThresh(int thresh, int whiteCount) {
@@ -213,18 +176,15 @@ unsigned int countWhite(IplImage* image) {
     }
     return sum;
 }
-
-void blurHandler(int foo) {
-    //cvSmooth(imgB, imgTmp, CV_GAUSSIAN, blurDim*2+1, 0);
-    //cvSmooth(imgRes, imgTmp2, CV_GAUSSIAN, blurDim*2+1, 0);
-    //cvShowImage("Blue Blured Image", imgTmp2 );
-    //cannyHandler(0);
-}
-void cannyHandler(int foo) {
-    //cvCanny(imgTmp, imgE, lowThreshold, lowThreshold*ratio);
-    //cvCanny(imgTmp2, imgE2, lowThreshold, lowThreshold*ratio);
-    //cvShowImage("Edges Detected", imgE2 );
-    //houghHandler(0);
+CvSeq* findHoughLinesP(void){ // just to make main cleaner
+    return cvHoughLines2(   frameEdge,
+                            lineStorage,
+                            CV_HOUGH_PROBABILISTIC,
+                            rhoRes,
+                            thetaRes,
+                            houghThreshold+1,
+                            minLineLength,
+                            minGapJump);
 }
 void houghHandler(int foo){
     //lines = cvHoughLines2(frameBedge , lineStorage, CV_HOUGH_STANDARD,
