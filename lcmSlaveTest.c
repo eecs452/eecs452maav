@@ -11,6 +11,7 @@
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
 
+//#define SHOW_IMAGES
 IplImage* frame;        // Original Image  (Full Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
 IplImage* frameR;       // Red Coponent    (scaled)
@@ -60,7 +61,9 @@ int main(int argc, char *argv[]) {
     if(!lcm)
         return 1;
 
+#ifdef SHOW_IMAGES
     initWindows();
+#endif
     lineStorage = cvCreateMemStorage(0);
 
     CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
@@ -79,8 +82,10 @@ int main(int argc, char *argv[]) {
     cvSmooth(frameR, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
     cvCanny(frameBlur, frameEdge, edgeThresh, edgeThresh*3,3);
 
+#ifdef SHOW_IMAGES
     cvShowImage("Original Image", frameScale);
     cvShowImage("Edges Detected", frameEdge);
+#endif
 
     printf("\n\n");
     line_t *linePtr;
@@ -95,7 +100,9 @@ int main(int argc, char *argv[]) {
         lineAndCircleInfo.imageTimeStamp = timestamp_now();
         
         lines = findHoughLinesP();
+#ifdef SHOW_IMAGES
         drawHoughLinesP(lines);
+#endif
 
         int numLines   = lines->total;
         int numCircles = 0;
