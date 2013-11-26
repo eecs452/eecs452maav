@@ -6,12 +6,12 @@
 #include "common/timestamp.h"
 #include <lcm/lcm.h>
 #include "lcmtypes/image_lines_t.h"
-#include "lcmtypes/point_t.h"
+//#include "lcmtypes/point_t.h"
 
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
 
-//#define SHOW_IMAGES
+#define SHOW_IMAGES
 #define DEBUG
 
 IplImage* frame;        // Original Image  (Full Resolution)
@@ -140,6 +140,7 @@ int main(int argc, char *argv[]) {
 #ifdef DEBUG
         printf("I've found %2d lines for you! :Time = %lli\n",numLines,
                                             lineAndCircleInfo.imageTimeStamp);
+#endif
         for(i=0; i<numLines; i++) {
             currentLine = (CvPoint*) cvGetSeqElem(lines, i);
             pt1 = currentLine[0];
@@ -151,18 +152,21 @@ int main(int argc, char *argv[]) {
             line[i].point[1].y = pt2.y;
             line[i].confidence = 50;
 
+#ifdef DEBUG
             printf("\tLine %2d=(%4d,%4d),(%4d,%4d)\n",i+1,
                                     lineAndCircleInfo.line[i].point[0].x,
                                     lineAndCircleInfo.line[i].point[0].y,
                                     lineAndCircleInfo.line[i].point[1].x,
                                     lineAndCircleInfo.line[i].point[1].y);
+#endif
         }
+#ifdef DEBUG
         printf("\n\n\n");
 #endif
 
         int encodedSize = image_lines_t_encoded_size(&lineAndCircleInfo);
-        uint8_t* buff = (uint8_t*)malloc(encodedSize);
-        if(!buff) return -1;
+        //uint8_t* buff = (uint8_t*)malloc(encodedSize);
+        //if(!buff) return -1;
         lineAndCircleInfo.transmissionTimeStamp = timestamp_now();
         //__image_lines_t_encode_array(buff, 0, encodedSize,
         //                                &lineAndCircleInfo,1);
@@ -171,7 +175,7 @@ int main(int argc, char *argv[]) {
         
         free(line);
         free(circle);
-        free(buff);
+        //free(buff);
     }
     cvReleaseImage(&frame);
     cvReleaseImage(&frameR);
