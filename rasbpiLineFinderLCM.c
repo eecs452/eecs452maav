@@ -170,11 +170,11 @@ int main(int argc, char *argv[]) {
 
 
         int nSize = frame->nSize;
-        int64_t imageSize = frame->imageSize;
-        //int imageSize = 0;
+        //int64_t imageSize = frame->imageSize;
+        int imageSize = 0;
         lineAndCircleInfo.nSize = nSize;
         lineAndCircleInfo.imageSize = imageSize;
-        lineAndCircleInfo.rawIplData = &frame;
+        //lineAndCircleInfo.rawIplData = &frame;
         lineAndCircleInfo.imageData = frame->imageData;
         int64_t encodedSize = image_lines_t_encoded_size(&lineAndCircleInfo);
 
@@ -185,8 +185,9 @@ int main(int argc, char *argv[]) {
         image_lines_t_publish(lcm, "LINES_AND_CIRCLES_AND_IMAGES, OH_MY",&lineAndCircleInfo);
         
 #ifdef DEBUG
-        printf("Imave size = %lli\n\n\n",imageSize);
+        printf("Image size = %d\n\n\n",imageSize);
         //printf("Embedded size = %lli\n\n\n",encodedSize);
+        usleep(500000);
 #endif
         free(line);
         free(circle);
