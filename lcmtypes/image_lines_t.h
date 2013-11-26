@@ -27,6 +27,10 @@ struct _image_lines_t
     line_t     *line;
     int16_t    numCircles;
     circle_t   *circle;
+    int32_t    nSize;
+    int8_t     *rawIplData;
+    int32_t    imageSize;
+    int8_t     *imageData;
 };
 
 image_lines_t   *image_lines_t_copy(const image_lines_t *p);

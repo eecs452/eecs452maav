@@ -10,4 +10,10 @@ struct image_lines_t {
     // circles
     int16_t numCircles;
     circle_t circle[numCircles];
+
+    //image info
+    int32_t nSize;
+    int8_t rawIplData[nSize];
+    int32_t imageSize;
+    int8_t imageData[imageSize];
 }

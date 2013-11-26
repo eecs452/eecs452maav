@@ -44,6 +44,17 @@ lcm_t *lcm;
 void initWindows(void);
 CvSeq* findHoughLinesP(void);
 void drawHoughLinesP(CvSeq* lines);
+
+
+static void functionPtr(const lcm_recv_buf_t *rbuf,
+             const char *channel, const image_lines_t *msg, void *user) {
+    printf("Message Recieved!! from ");
+    printf(channel);
+    printf("\n");
+    return;
+}
+
+
 int main(int argc, char *argv[]) {
     //if(argc<2){
     //    printf("Usage: main <image-file-name> \n\7");
@@ -55,13 +66,13 @@ int main(int argc, char *argv[]) {
     //    exit(0);
     //}
     
-    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=0");
+    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
     //if(!lcm)
     //    return 1;
 
-    //image_lines_t_subscribe(lcm,
-    //        "LINES_AND_CIRCLES_AND_IMAGES, OH_MY",
-    //        &lineAndCircleInfo, NULL);
+    image_lines_t_subscription_t* dataSub = image_lines_t_subscribe(lcm,
+            "LINES_AND_CIRCLES_AND_IMAGES, OH_MY",
+            &functionPtr, NULL);
     
     //initWindows();
     //lineStorage = cvCreateMemStorage(0);
@@ -90,7 +101,8 @@ int main(int argc, char *argv[]) {
     image_lines_t lineAndCircleInfo;
     line_t* line;
     circle_t* circle;
-    while(cvWaitKey(100) == -1) {
+    while(1) {
+        lcm_handle(lcm);
         //CvSeq* lines;
         //CvPoint pt1, pt2;
         //CvPoint *currentLine;

@@ -9,6 +9,8 @@ still:
 	gcc -pg -I/usr/local/include/opencv hello-world.cpp -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
 demo:
 	gcc -pg -I/usr/local/include/opencv -I/homeleonard/lcm rasbpiLineFinderLCM.c $(LCM_TYPES) common/timestamp.c -llcm -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
+master:
+	gcc -pg -I/usr/local/include/opencv -I/homeleonard/lcm lcmMasterTest.c $(LCM_TYPES) common/timestamp.c -llcm -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
 slave:
 	gcc -pg -I/usr/local/include/opencv -I/homeleonard/lcm lcmSlaveTest.c $(LCM_TYPES) common/timestamp.c -llcm -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
 lines:
