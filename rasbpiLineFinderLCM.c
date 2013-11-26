@@ -14,7 +14,8 @@
 #define SHOW_IMAGES
 #define DEBUG
 
-IplImage* frame;        // Original Image  (Full Resolution)
+
+IplImage* frame;        // Original Image  (scaled Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
 IplImage* frameR;       // Red Coponent    (scaled)
 IplImage* frameG;       // Green Coponent    (scaled)
@@ -66,7 +67,9 @@ int main(int argc, char *argv[]) {
     }
     //int height,width,step,channels;
     int i,j,k;
-
+    //frame = cvCreateImage(cvSize(176,144), frameOrig->depth,3);
+    //cvResize(frameOrig, frame, CV_INTER_LINEAR);
+    //frame = frameOrig;
 #ifdef DEBUG
     printf("Processing a %dx%d image with %d channels\n",
                                   frame->width,frame->height,frame->nChannels); 
@@ -114,6 +117,10 @@ int main(int argc, char *argv[]) {
 #endif
         lineAndCircleInfo.imageTimeStamp = timestamp_now();
         frame = cvRetrieveFrame(capture,0);
+
+        //cvResize(frameOrig, frame, CV_INTER_LINEAR);
+        //frame = frameOrig;
+
         cvSplit(frame, frameB, frameG, frameR, 0);
         cvSmooth(frameR, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
         cvCanny(frameBlur, frameEdge, edgeThresh, edgeThresh*3,3);
@@ -160,19 +167,27 @@ int main(int argc, char *argv[]) {
                                     lineAndCircleInfo.line[i].point[1].y);
 #endif
         }
-#ifdef DEBUG
-        printf("\n\n\n");
-#endif
 
-        int encodedSize = image_lines_t_encoded_size(&lineAndCircleInfo);
-        //uint8_t* buff = (uint8_t*)malloc(encodedSize);
-        //if(!buff) return -1;
+
+        int nSize = frame->nSize;
+        int64_t imageSize = frame->imageSize;
+        //int imageSize = 0;
+        lineAndCircleInfo.nSize = nSize;
+        lineAndCircleInfo.imageSize = imageSize;
+        lineAndCircleInfo.rawIplData = &frame;
+        lineAndCircleInfo.imageData = frame->imageData;
+        int64_t encodedSize = image_lines_t_encoded_size(&lineAndCircleInfo);
+
         lineAndCircleInfo.transmissionTimeStamp = timestamp_now();
         //__image_lines_t_encode_array(buff, 0, encodedSize,
         //                                &lineAndCircleInfo,1);
 
         image_lines_t_publish(lcm, "LINES_AND_CIRCLES_AND_IMAGES, OH_MY",&lineAndCircleInfo);
         
+#ifdef DEBUG
+        printf("Imave size = %lli\n\n\n",imageSize);
+        //printf("Embedded size = %lli\n\n\n",encodedSize);
+#endif
         free(line);
         free(circle);
         //free(buff);

@@ -20,13 +20,17 @@ int64_t __image_lines_t_hash_recursive(const __lcm_hash_ptr *p)
     const __lcm_hash_ptr cp = { p, (void*)__image_lines_t_get_hash };
     (void) cp;
 
-    int64_t hash = 0x8962cc780d9830e2LL
+    int64_t hash = 0x7de03ac2a88830b8LL
          + __int64_t_hash_recursive(&cp)
          + __int64_t_hash_recursive(&cp)
          + __int16_t_hash_recursive(&cp)
          + __line_t_hash_recursive(&cp)
          + __int16_t_hash_recursive(&cp)
          + __circle_t_hash_recursive(&cp)
+         + __int32_t_hash_recursive(&cp)
+         + __int8_t_hash_recursive(&cp)
+         + __int32_t_hash_recursive(&cp)
+         + __int8_t_hash_recursive(&cp)
         ;
 
     return (hash<<1) + ((hash>>63)&1);
@@ -66,6 +70,18 @@ int __image_lines_t_encode_array(void *buf, int offset, int maxlen, const image_
         thislen = __circle_t_encode_array(buf, offset + pos, maxlen - pos, p[element].circle, p[element].numCircles);
         if (thislen < 0) return thislen; else pos += thislen;
 
+        thislen = __int32_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].nSize), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+
+        thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, p[element].rawIplData, p[element].nSize);
+        if (thislen < 0) return thislen; else pos += thislen;
+
+        thislen = __int32_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].imageSize), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+
+        thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, p[element].imageData, p[element].imageSize);
+        if (thislen < 0) return thislen; else pos += thislen;
+
     }
     return pos;
 }
@@ -100,6 +116,14 @@ int __image_lines_t_encoded_array_size(const image_lines_t *p, int elements)
         size += __int16_t_encoded_array_size(&(p[element].numCircles), 1);
 
         size += __circle_t_encoded_array_size(p[element].circle, p[element].numCircles);
+
+        size += __int32_t_encoded_array_size(&(p[element].nSize), 1);
+
+        size += __int8_t_encoded_array_size(p[element].rawIplData, p[element].nSize);
+
+        size += __int32_t_encoded_array_size(&(p[element].imageSize), 1);
+
+        size += __int8_t_encoded_array_size(p[element].imageData, p[element].imageSize);
 
     }
     return size;
@@ -136,6 +160,20 @@ int __image_lines_t_decode_array(const void *buf, int offset, int maxlen, image_
         thislen = __circle_t_decode_array(buf, offset + pos, maxlen - pos, p[element].circle, p[element].numCircles);
         if (thislen < 0) return thislen; else pos += thislen;
 
+        thislen = __int32_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].nSize), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+
+        p[element].rawIplData = (int8_t*) lcm_malloc(sizeof(int8_t) * p[element].nSize);
+        thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, p[element].rawIplData, p[element].nSize);
+        if (thislen < 0) return thislen; else pos += thislen;
+
+        thislen = __int32_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].imageSize), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+
+        p[element].imageData = (int8_t*) lcm_malloc(sizeof(int8_t) * p[element].imageSize);
+        thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, p[element].imageData, p[element].imageSize);
+        if (thislen < 0) return thislen; else pos += thislen;
+
     }
     return pos;
 }
@@ -158,6 +196,16 @@ int __image_lines_t_decode_array_cleanup(image_lines_t *p, int elements)
 
         __circle_t_decode_array_cleanup(p[element].circle, p[element].numCircles);
         if (p[element].circle) free(p[element].circle);
+
+        __int32_t_decode_array_cleanup(&(p[element].nSize), 1);
+
+        __int8_t_decode_array_cleanup(p[element].rawIplData, p[element].nSize);
+        if (p[element].rawIplData) free(p[element].rawIplData);
+
+        __int32_t_decode_array_cleanup(&(p[element].imageSize), 1);
+
+        __int8_t_decode_array_cleanup(p[element].imageData, p[element].imageSize);
+        if (p[element].imageData) free(p[element].imageData);
 
     }
     return 0;
@@ -202,6 +250,16 @@ int __image_lines_t_clone_array(const image_lines_t *p, image_lines_t *q, int el
 
         q[element].circle = (circle_t*) lcm_malloc(sizeof(circle_t) * q[element].numCircles);
         __circle_t_clone_array(p[element].circle, q[element].circle, p[element].numCircles);
+
+        __int32_t_clone_array(&(p[element].nSize), &(q[element].nSize), 1);
+
+        q[element].rawIplData = (int8_t*) lcm_malloc(sizeof(int8_t) * q[element].nSize);
+        __int8_t_clone_array(p[element].rawIplData, q[element].rawIplData, p[element].nSize);
+
+        __int32_t_clone_array(&(p[element].imageSize), &(q[element].imageSize), 1);
+
+        q[element].imageData = (int8_t*) lcm_malloc(sizeof(int8_t) * q[element].imageSize);
+        __int8_t_clone_array(p[element].imageData, q[element].imageData, p[element].imageSize);
 
     }
     return 0;

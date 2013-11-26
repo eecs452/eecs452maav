@@ -120,7 +120,6 @@ int main(int argc, char *argv[]) {
         printf("No image caputre device detected!!\n\n");
         exit(0);
     }
-
     int height,width,step,channels;
     int i,j,k;
 
