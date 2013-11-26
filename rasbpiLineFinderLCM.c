@@ -11,8 +11,8 @@
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
 
-#define SHOW_IMAGES
-#define DEBUG
+//#define SHOW_IMAGES
+//#define DEBUG
 
 IplImage* frame;        // Original Image  (Full Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
