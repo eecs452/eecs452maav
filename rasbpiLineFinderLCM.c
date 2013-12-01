@@ -6,14 +6,14 @@
 #include "common/timestamp.h"
 #include <lcm/lcm.h>
 #include "lcmtypes/image_lines_t.h"
-//#include "lcmtypes/point_t.h"
+#include "lcmtypes/point_t.h"
 
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
 
 #define SHOW_IMAGES
 #define DEBUG
-#define SEND_LCM
+//#define SEND_LCM
 
 IplImage* frame;        // Original Image  (scaled Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
