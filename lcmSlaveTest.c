@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     }
     
 	lcm_t *lcm;
-    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
+    lcm = lcm_create("udpm://239.255.76.67:7667?ttl=2");
     //lcm = lcm_create("tcpq://192.168.1.102?ttl=0");
     if(!lcm)
         return 1;

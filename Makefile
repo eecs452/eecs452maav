@@ -1,4 +1,6 @@
 LCM_TYPES = lcmtypes/point_t.c lcmtypes/line_t.c lcmtypes/circle_t.c lcmtypes/image_lines_t.c
+snap:
+	gcc -I/usr/local/include/opencv snapshotOnExit.c -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
 cam:
 	gcc -pg -I/usr/local/include/opencv webcamTest.cpp -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
 rasbcam:

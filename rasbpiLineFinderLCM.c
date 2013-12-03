@@ -6,14 +6,13 @@
 #include "common/timestamp.h"
 #include <lcm/lcm.h>
 #include "lcmtypes/image_lines_t.h"
-//#include "lcmtypes/point_t.h"
 
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
 
 #define SHOW_IMAGES
 #define DEBUG
-
+//#define SEND_LCM
 
 IplImage* frame;        // Original Image  (scaled Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
@@ -48,28 +47,41 @@ void initWindows(void);
 CvSeq* findHoughLinesP(void);
 void drawHoughLinesP(CvSeq* lines, IplImage* frame);
 int main(int argc, char *argv[]) {
+#ifdef SEND_LCM
 	lcm_t *lcm;
     // ttl = 0 for local, ttl = 1 for broadcast
     lcm = lcm_create("udpm://239.255.76.67:7667?ttl=1");
     //lcm = lcm_create("tcpq://192.168.1.102?ttl=0");
     if(!lcm)
         return 1;
-
+#endif
     CvCapture* capture = cvCaptureFromCAM(-1); // open the default camera
     cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH,  176);
     cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 144);
   
-    IplImage* frame = cvQueryFrame(capture);  // Grab an initial image for analysis
-    if(frame == NULL) {
+    IplImage* frameOrig = cvQueryFrame(capture);  // Grab an initial image for analysis
+    if(frameOrig == NULL) {
         // For some reason the default camera could not be initialized
         printf("No image caputre device detected!!\n\n");
         exit(0);
     }
-    //int height,width,step,channels;
     int i,j,k;
-    //frame = cvCreateImage(cvSize(176,144), frameOrig->depth,3);
-    //cvResize(frameOrig, frame, CV_INTER_LINEAR);
-    //frame = frameOrig;
+
+    int resizeNeeded = 0;
+    if(frameOrig->width > 200) {
+        printf("Hey, the size is wrong!!\n\n");
+        printf("the size is actually %d\n\n",frameOrig->width);
+        resizeNeeded = 1;
+    }
+
+    if(resizeNeeded) {
+        frame = cvCreateImage(cvSize(176,144), frameOrig->depth,3);
+        cvResize(frameOrig, frame, CV_INTER_LINEAR);
+    }
+    else {
+        frame = frameOrig;
+    }
+
 #ifdef DEBUG
     printf("Processing a %dx%d image with %d channels\n",
                                   frame->width,frame->height,frame->nChannels); 
@@ -110,19 +122,19 @@ int main(int argc, char *argv[]) {
     CvPoint *currentLine;
     
 #ifdef SHOW_IMAGES
-    while(cvWaitKey(30) == -1) {
+    while(cvWaitKey(100) == -1) {
         cvGrabFrame(capture);
 #else
     while(cvGrabFrame(capture)) {
 #endif
         lineAndCircleInfo.imageTimeStamp = timestamp_now();
-        frame = cvRetrieveFrame(capture,0);
+        
+        frameOrig = cvRetrieveFrame(capture,0);
 
-        //cvResize(frameOrig, frame, CV_INTER_LINEAR);
-        //frame = frameOrig;
+        if(resizeNeeded) cvResize(frameOrig, frame, CV_INTER_LINEAR);
 
         cvSplit(frame, frameB, frameG, frameR, 0);
-        cvSmooth(frameR, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
+        cvSmooth(frameB, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
         cvCanny(frameBlur, frameEdge, edgeThresh, edgeThresh*3,3);
         
         lines = findHoughLinesP();
@@ -170,23 +182,25 @@ int main(int argc, char *argv[]) {
 
 
         int nSize = frame->nSize;
-        int64_t imageSize = frame->imageSize;
-        //int imageSize = 0;
+        //int64_t imageSize = frame->imageSize;
+        int imageSize = 0;
         lineAndCircleInfo.nSize = nSize;
         lineAndCircleInfo.imageSize = imageSize;
-        lineAndCircleInfo.rawIplData = &frame;
+        //lineAndCircleInfo.rawIplData = &frame;
         lineAndCircleInfo.imageData = frame->imageData;
         int64_t encodedSize = image_lines_t_encoded_size(&lineAndCircleInfo);
 
         lineAndCircleInfo.transmissionTimeStamp = timestamp_now();
         //__image_lines_t_encode_array(buff, 0, encodedSize,
         //                                &lineAndCircleInfo,1);
-
+#ifdef SEND_LCM
         image_lines_t_publish(lcm, "LINES_AND_CIRCLES_AND_IMAGES, OH_MY",&lineAndCircleInfo);
-        
+#endif
+
 #ifdef DEBUG
-        printf("Imave size = %lli\n\n\n",imageSize);
+        printf("Image size = %d\n\n\n",imageSize);
         //printf("Embedded size = %lli\n\n\n",encodedSize);
+        usleep(500000);
 #endif
         free(line);
         free(circle);
