@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
         //frame = frameOrig;
 
         cvSplit(frame, frameB, frameG, frameR, 0);
-        cvSmooth(frameR, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
+        cvSmooth(frameB, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
         cvCanny(frameBlur, frameEdge, edgeThresh, edgeThresh*3,3);
         
         lines = findHoughLinesP();
