@@ -11,7 +11,7 @@
 #define DESIRED_HEIGHT 144
 
 //#define SHOW_IMAGES
-#define DEBUG
+//#define DEBUG
 #define SEND_LCM
 #define DETECT_CIRCLES
 #define LINE_COLOR
@@ -50,10 +50,11 @@ int blurDim = 2;
 
 int i;
 unsigned int numCircles;
-int16_t* currentCircle;
+float* currentCircle; // should be int16_t* or float* ?
 CvPoint center;
 CvMemStorage* circleStorage;
 
+void fixFocus(void);
 void initWindows(void);
 CvSeq* findHoughLinesP(void);
 CvSeq* findHoughCircles(void);
@@ -79,6 +80,9 @@ int main(int argc, char *argv[]) {
         printf("No image caputre device detected!!\n\n");
         exit(0);
     }
+
+    // turn off auto focous and manually set the focus to inf
+    fixFocus();
     int i,j,k;
 
     int resizeNeeded = 0;
@@ -146,7 +150,7 @@ int main(int argc, char *argv[]) {
     //int retVal = 0; moved up a few lines by dh
     while(1) {
         //retVal = cvGrabFrame(capture);
-        printf("retVal = %d\n", retVal);
+        //printf("retVal = %d\n", retVal);
 #endif
         lineAndCircleInfo.imageTimeStamp = timestamp_now();
         
@@ -236,17 +240,21 @@ int main(int argc, char *argv[]) {
         }
 
 #ifdef DETECT_CIRCLES
+#ifdef DEBUG
         printf("I've found %2d circles for you! :Time = %lli\n",numCircles,
                                             lineAndCircleInfo.imageTimeStamp);
+#endif
         CvPoint center;
         int16_t radius;
         for(i=0; i<numCircles; i++) {
-            currentCircle = (int16_t*) cvGetSeqElem(circles, i);
+            currentCircle = (float*) cvGetSeqElem(circles, i);
             center.x = (int16_t)currentCircle[0];
             center.y = (int16_t)currentCircle[1];
             radius   = (int16_t)currentCircle[2]; 
 
-            circle[i].center.y = center.y;
+            // note to David:  this works now
+
+            circle[i].center.x = center.x;
             circle[i].center.y = center.y;
             circle[i].radius   = radius;
             circle[i].confidence = 50;
@@ -259,6 +267,7 @@ int main(int argc, char *argv[]) {
 #endif
 
         }
+        //printf("outside of circle detection while loop\n"); // delete this later
 #endif
 
 
@@ -422,3 +431,8 @@ void initWindows(void) {
             tmpRow*scaleRow+offsetRow);
 }
 
+void fixFocus(void) {
+    system("uvcdynctrl -d /dev/video0 -s 'Focus, Auto' 0");
+    system("uvcdynctrl -d /dev/video0 -s 'Focus (absolute)' 0");
+    return;
+}
