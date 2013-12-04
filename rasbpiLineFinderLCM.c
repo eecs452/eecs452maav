@@ -6,6 +6,7 @@
 #include "common/timestamp.h"
 #include <lcm/lcm.h>
 #include "lcmtypes/image_lines_t.h"
+#include "typedefs.h"
 
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
@@ -29,7 +30,8 @@ CvMemStorage* lineStorage;
 
 int rhoRes = 4;
 float thetaRes = CV_PI/45;
-float centerOverlap = 32;
+float centerOverlap = 48; // min # of pixels between detected circle centers
+                            // (removes concentric cirlces)
 
 int edgeThresh = 100;
 
@@ -42,9 +44,9 @@ int const maxGapJump = 50;
 int houghThreshold = 50;
 int const maxHoughThreshold = 300;
 
-int circleThreshold = 20;
-int circleMinRadiusThreshold = 4;
-int circleMaxRadiusThreshold = 100;
+int circleThreshold = 20;  //between 20 and 30 seems to work
+int circleMinRadiusThreshold = 10; 
+int circleMaxRadiusThreshold = 50; 
 
 int blurDim = 2;
 
@@ -327,22 +329,75 @@ CvSeq* findHoughCircles(void) {
                             circleMinRadiusThreshold,
                             circleMaxRadiusThreshold);
 }
-int8_t detectLineColor(CvPoint pt1, CvPoint pt2) {
-    CvPoint midpt, near;
-    uchar R,G,B;
-    uchar highThresh=180;
-    uchar lowThresh=150;
-    int8_t colorVal;
-    //float theta;
-    //float PI = 3.14159265; // or should we use a double?
+Color_u detectLineColor(CvPoint pt1, CvPoint pt2) {
+    CvPoint midpt, left, right;
+    uchar rR,rG,rB,lR,lG,lB; // colors of left and right points
+//    uchar highThresh=180;
+//    uchar lowThresh=150;
+    Color_u colorData;
+    float theta; // angle of line
+    float PI = 3.14159265; // or should we use a double?
+    float relR, relG, relW; // relative values of the colors
+    int16_t lGrScale, rGrScale; 
 
-    midpt.x = (pt1.x+pt2.x) >> 1;
-    midpt.y = (pt1.y+pt2.y) >> 1;
+    theta = atan2(pt1.y-pt2.y, pt1.x-pt2.x); // angle of line
+    theta = theta + PI/2; // rotate by 90 deg
 
-    B = ((uchar*)(frame->imageData + frame->widthStep*midpt.y))[midpt.x*3  ];
-    G = ((uchar*)(frame->imageData + frame->widthStep*midpt.y))[midpt.x*3+1];
-    R = ((uchar*)(frame->imageData + frame->widthStep*midpt.y))[midpt.x*3+2];
+    midpt.y = (pt1.y+pt2.y) >> 1;    
+    midpt.x = (pt1.x+pt2.x) >> 1;   
+    left.x  = cvRound( midpt.x + 1.5*cos(theta) );
+    left.y  = cvRound( midpt.y + 1.5*sin(theta) );
+    right.x = cvRound( midpt.x - 1.5*cos(theta) );
+    right.y = cvRound( midpt.y - 1.5*sin(theta) );    
+        
+    lB = ((uchar*)(frameBlur->imageData + frameBlur->widthStep*left.y ))[left.x*3   ];
+    lG = ((uchar*)(frameBlur->imageData + frameBlur->widthStep*left.y ))[left.x*3+1 ];
+    lR = ((uchar*)(frameBlur->imageData + frameBlur->widthStep*left.y ))[left.x*3+2 ];
 
+    rB = ((uchar*)(frameBlur->imageData + frameBlur->widthStep*right.y))[right.x*3  ];
+    rG = ((uchar*)(frameBlur->imageData + frameBlur->widthStep*right.y))[right.x*3+1];
+    rR = ((uchar*)(frameBlur->imageData + frameBlur->widthStep*right.y))[right.x*3+2];
+    
+    lGrScale = lR+lG+lB+1; // +1 to make sure there's no div by 0
+    rGrScale = rR+rG+rB+1;
+    relR = lR/(lGrScale) - rR/(lGrScale); // range (-1,1), where a large neg
+    relG = lG/(rGrScale) - rG/(rGrScale); // number means the right side is colored
+    relW = (lGrScale-rGrScale)/(3*255);   // and a large pos num means the left is colored
+
+    if (abs(relR)>abs(relG) && abs(relR)>abs(relW)) {
+        colorData.f.R = 1;
+        colorData.f.G = 0;
+        colorData.f.B = 0;
+        colorData.strength = (int8_t) 16*relR; // will this round properly? ie, will +16 saturate or overflow?
+    } else if (abs(relG)>abs(relR) && abs(relG)>abs(relW)) {
+        colorData.f.R = 0;
+        colorData.f.G = 1;
+        colorData.f.B = 0;
+        colorData.strength = (int8_t) 16*relG;
+    } else if (abs(relW)>abs(relR) && abs(relW)>abs(relG)) {
+        colorData.f.R = 1;
+        colorData.f.G = 1;
+        colorData.f.B = 1;
+        colorData.strength = (int8_t) 16*relW;
+    } else { // color is unknown, so output white with strenth of 0
+             // this will only happen very rarely, like if color is (0,0,0)
+        colorData.f.R = 1;
+        colorData.f.G = 1;
+        colorData.f.B = 1;
+        colorData.strength = 0;
+    }
+
+#ifdef DEBUG
+    printf("Color=(%i,%i,%i) with strength %i\n",colorData.f.R,
+                                                 colorData.f.G,    
+                                                 colorData.f.G,
+                                                 colorData.strength);
+#endif
+
+    return colorData;
+}
+
+    /* old color sensing code
     if ((R>highThresh) && (G>highThresh) && (B>highThresh)) // white line
         colorVal = 1;
     else if ((R>highThresh) && (G<lowThresh) && (B<lowThresh)) // red line
@@ -351,7 +406,7 @@ int8_t detectLineColor(CvPoint pt1, CvPoint pt2) {
         colorVal = 3;
     else { // midpoint color is unknown, try a nearby pixel
         colorVal = 0;
-        /*
+        
         theta = atan2(pt1.y-pt2.y, pt1.x-pt2.x); // angle of line
         theta = theta + PI/2; // angle of perpendicular line
         near.x = cvRound( midpt.x + 1.5*cos(theta) ); // a point perpendicular to line,
@@ -385,13 +440,13 @@ int8_t detectLineColor(CvPoint pt1, CvPoint pt2) {
             else
                 colorVal = 0; // midpoint is still unknown, but we'll give up trying to find it
         }
-        */
     }
 #ifdef DEBUG
     printf("\t\tColor of point:(%d,%d,%d)\n",R,G,B);
 #endif
     return colorVal;
 }
+*/
 
 void drawHoughLinesP(CvSeq* lines, IplImage* frame){
     int i;
