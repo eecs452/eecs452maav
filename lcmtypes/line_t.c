@@ -17,11 +17,14 @@ int64_t __line_t_hash_recursive(const __lcm_hash_ptr *p)
         if (fp->v == __line_t_get_hash)
             return 0;
 
-    const __lcm_hash_ptr cp = { p, (void*)__line_t_get_hash };
+    __lcm_hash_ptr cp;
+    cp.parent =  p;
+    cp.v = (void*)__line_t_get_hash;
     (void) cp;
 
-    int64_t hash = 0x9aac7e0bb4207a88LL
+    int64_t hash = 0xfb851b76529b2163LL
          + __point_t_hash_recursive(&cp)
+         + __int8_t_hash_recursive(&cp)
          + __int8_t_hash_recursive(&cp)
         ;
 
@@ -48,6 +51,9 @@ int __line_t_encode_array(void *buf, int offset, int maxlen, const line_t *p, in
         if (thislen < 0) return thislen; else pos += thislen;
 
         thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].confidence), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+
+        thislen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &(p[element].color), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
     }
@@ -77,6 +83,8 @@ int __line_t_encoded_array_size(const line_t *p, int elements)
 
         size += __int8_t_encoded_array_size(&(p[element].confidence), 1);
 
+        size += __int8_t_encoded_array_size(&(p[element].color), 1);
+
     }
     return size;
 }
@@ -98,6 +106,9 @@ int __line_t_decode_array(const void *buf, int offset, int maxlen, line_t *p, in
         thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].confidence), 1);
         if (thislen < 0) return thislen; else pos += thislen;
 
+        thislen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &(p[element].color), 1);
+        if (thislen < 0) return thislen; else pos += thislen;
+
     }
     return pos;
 }
@@ -110,6 +121,8 @@ int __line_t_decode_array_cleanup(line_t *p, int elements)
         __point_t_decode_array_cleanup(p[element].point, 2);
 
         __int8_t_decode_array_cleanup(&(p[element].confidence), 1);
+
+        __int8_t_decode_array_cleanup(&(p[element].color), 1);
 
     }
     return 0;
@@ -144,6 +157,8 @@ int __line_t_clone_array(const line_t *p, line_t *q, int elements)
         __point_t_clone_array(p[element].point, q[element].point, 2);
 
         __int8_t_clone_array(&(p[element].confidence), &(q[element].confidence), 1);
+
+        __int8_t_clone_array(&(p[element].color), &(q[element].color), 1);
 
     }
     return 0;
