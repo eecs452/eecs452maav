@@ -22,6 +22,7 @@ struct _line_t
 {
     point_t    point[2];
     int8_t     confidence;
+    int8_t     color;
 };
 
 line_t   *line_t_copy(const line_t *p);
