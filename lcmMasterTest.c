@@ -7,14 +7,17 @@
 #include <lcm/lcm.h>
 #include "lcmtypes/image_lines_t.h"
 #include "lcmtypes/point_t.h"
+#include "typedefs.h"
 
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
+#define WHITE cvScalar(255,255,255,0)
+#define GREEN cvScalar(0,255,0,0)
+#define RED   cvScalar(0,0,255,0)
 
 IplImage* frame;        // Original Image  (Full Resolution)
 IplImage* frameTmp;
 
-//CvMemStorage* lineStorage;
 
 int rhoRes = 4;
 float thetaRes = CV_PI/45;
@@ -37,7 +40,8 @@ lcm_t *lcm;
 
 void initWindows(void);
 CvSeq* findHoughLinesP(void);
-void drawHoughLinesP(int, line_t*);
+void drawHoughLinesP(int, line_t*, IplImage*);
+void drawHoughCircles(int, circle_t*, IplImage*);
 
 
 static void functionPtr(const lcm_recv_buf_t *rbuf,
@@ -48,14 +52,20 @@ static void functionPtr(const lcm_recv_buf_t *rbuf,
     int numLines = (int)msg->numLines;
     int numCircles = (int)msg->numCircles;
 
+    Color_u color;
+    
+
     if(numLines > maxLines) numLines = maxLines;
     if(numCircles > maxCircles) numCircles = maxCircles;
 
-    drawHoughLinesP(numLines,msg->line);
-    //drawHoughCircles(numCircles,msg->circle); // TODO
+    frameTmp = cvCloneImage(frame);
+    drawHoughLinesP(numLines,msg->line, frameTmp);
+    drawHoughCircles(numCircles,msg->circle, frameTmp);
+    cvShowImage("Probablistic Hough", frameTmp );
+    cvReleaseImage(&frameTmp);
     
     system("clear");
-    printf("\n\n\nTime: %li\n",msg->imageTimeStamp);
+    printf("\n\n\nTime: %lli\n",msg->imageTimeStamp);
     printf("\nFound %2d lines.\n",numLines);
 
 	for(i=0;i<numLines;i++) {
@@ -64,8 +74,24 @@ static void functionPtr(const lcm_recv_buf_t *rbuf,
 	    	msg->line[i].point[0].y,
 		    msg->line[i].point[1].x, 
 	        msg->line[i].point[1].y);
-
-        printf("Color: Unknown\n"); // TODO
+            
+            color.raw = msg->line[i].color;
+            int R = color.f.R;
+            int G = color.f.G;
+            int B = color.f.B;
+            //CvScalar rgb = cvScalar(color.f.R*256,color.f.G*256,color.f.B*256,0);
+            if(R&G&B) {
+                printf("Color: White\n");
+            }
+            else if(!R &  G & !B) {
+                printf("Color: Green\n");
+            }
+            else if( R & !G & !B) {
+                printf("Color: Red\n");
+            }
+            else {
+                printf("Color: Unkonwn\n");
+            }
     }
     for(;i<maxLines;i++) printf("\n");
     
@@ -77,6 +103,7 @@ static void functionPtr(const lcm_recv_buf_t *rbuf,
             (int)msg->circle[i].radius); 
     }
     for(;i<maxCircles;i++) printf("\n");
+    //printf("Strenth=%4i, (R,G,B)=(%d,%d,%d)\n",color1.raw,color1.f.R,color1.f.G,color1.f.B);
 
     return;
 }
@@ -106,12 +133,38 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
-void drawHoughLinesP(int numLines, line_t* lines){
-    CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
-    int d = IPL_DEPTH_8U;
-    frameTmp = cvCloneImage(frame);
+void drawHoughCircles(int numCircles, circle_t* circles, IplImage* frameTmp){
+    //CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
+    //int d = IPL_DEPTH_8U;
+    //frameTmp = cvCloneImage(frame);
     int i;
     
+    CvPoint center;
+    int16_t radius;
+    for(i=0; i<numCircles; i++) {
+        center.x = circles[i].center.x;
+        center.y = circles[i].center.y;
+        radius   = circles[i].radius;
+
+
+        //cvCircle(frameTmp, center,      3, RED, -1, CV_AA, 0);
+        cvCircle(frameTmp, center, radius, WHITE, 0, CV_AA, 0); 
+    }
+    //cvShowImage("Probablistic Hough", frameTmp );
+    //cvReleaseImage(&frameTmp);
+
+    
+    return;
+}
+void drawHoughLinesP(int numLines, line_t* lines, IplImage* frameTmp){
+    //CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
+    //int d = IPL_DEPTH_8U;
+    //frameTmp = cvCloneImage(frame);
+    int i;
+    
+    Color_u color;
+    CvScalar scalarColor;
+
     CvPoint pt1, pt2;
 
     for(i=0; i<numLines; i++) {
@@ -119,10 +172,15 @@ void drawHoughLinesP(int numLines, line_t* lines){
     	pt1.y = lines[i].point[0].y;
 	    pt2.x = lines[i].point[1].x;
         pt2.y = lines[i].point[1].y;
-        cvLine(frameTmp,pt1,pt2,cvScalar(0,0,255,0),0,CV_AA,0);
+        
+        color.raw = lines[i].color;
+        color.f.R = 1; // override for testing
+
+        scalarColor = cvScalar(color.f.B*256, color.f.G*256, color.f.R*256,0);
+        cvLine(frameTmp,pt1,pt2,scalarColor,0,CV_AA,0);
     }
-    cvShowImage("Probablistic Hough", frameTmp );
-    cvReleaseImage(&frameTmp);
+    //cvShowImage("Probablistic Hough", frameTmp );
+    //cvReleaseImage(&frameTmp);
 
     return;
 }

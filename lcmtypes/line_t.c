@@ -17,9 +17,7 @@ int64_t __line_t_hash_recursive(const __lcm_hash_ptr *p)
         if (fp->v == __line_t_get_hash)
             return 0;
 
-    __lcm_hash_ptr cp;
-    cp.parent =  p;
-    cp.v = (void*)__line_t_get_hash;
+    const __lcm_hash_ptr cp = { p, (void*)__line_t_get_hash };
     (void) cp;
 
     int64_t hash = 0xfb851b76529b2163LL
