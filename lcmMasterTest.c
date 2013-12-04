@@ -10,6 +10,9 @@
 
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
+#define WHITE cvScalar(255,255,255,0)
+#define GREEN cvScalar(0,255,0,0)
+#define RED   cvScalar(0,0,255,0)
 
 IplImage* frame;        // Original Image  (Full Resolution)
 IplImage* frameTmp;
@@ -37,7 +40,8 @@ lcm_t *lcm;
 
 void initWindows(void);
 CvSeq* findHoughLinesP(void);
-void drawHoughLinesP(int, line_t*);
+void drawHoughLinesP(int, line_t*, IplImage*);
+void drawHoughCircles(int, circle_t*, IplImage*);
 
 
 static void functionPtr(const lcm_recv_buf_t *rbuf,
@@ -51,11 +55,14 @@ static void functionPtr(const lcm_recv_buf_t *rbuf,
     if(numLines > maxLines) numLines = maxLines;
     if(numCircles > maxCircles) numCircles = maxCircles;
 
-    drawHoughLinesP(numLines,msg->line);
-    //drawHoughCircles(numCircles,msg->circle); // TODO
+    frameTmp = cvCloneImage(frame);
+    drawHoughLinesP(numLines,msg->line, frameTmp);
+    drawHoughCircles(numCircles,msg->circle, frameTmp);
+    cvShowImage("Probablistic Hough", frameTmp );
+    cvReleaseImage(&frameTmp);
     
     system("clear");
-    printf("\n\n\nTime: %li\n",msg->imageTimeStamp);
+    printf("\n\n\nTime: %lli\n",msg->imageTimeStamp);
     printf("\nFound %2d lines.\n",numLines);
 
 	for(i=0;i<numLines;i++) {
@@ -106,10 +113,33 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
-void drawHoughLinesP(int numLines, line_t* lines){
-    CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
-    int d = IPL_DEPTH_8U;
-    frameTmp = cvCloneImage(frame);
+void drawHoughCircles(int numCircles, circle_t* circles, IplImage* frameTmp){
+    //CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
+    //int d = IPL_DEPTH_8U;
+    //frameTmp = cvCloneImage(frame);
+    int i;
+    
+    CvPoint center;
+    int16_t radius;
+    for(i=0; i<numCircles; i++) {
+        center.x = circles[i].center.x;
+        center.y = circles[i].center.y;
+        radius   = circles[i].radius;
+
+
+        //cvCircle(frameTmp, center,      3, RED, -1, CV_AA, 0);
+        cvCircle(frameTmp, center, radius, WHITE, 0, CV_AA, 0); 
+    }
+    //cvShowImage("Probablistic Hough", frameTmp );
+    //cvReleaseImage(&frameTmp);
+
+    
+    return;
+}
+void drawHoughLinesP(int numLines, line_t* lines, IplImage* frameTmp){
+    //CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
+    //int d = IPL_DEPTH_8U;
+    //frameTmp = cvCloneImage(frame);
     int i;
     
     CvPoint pt1, pt2;
@@ -119,10 +149,10 @@ void drawHoughLinesP(int numLines, line_t* lines){
     	pt1.y = lines[i].point[0].y;
 	    pt2.x = lines[i].point[1].x;
         pt2.y = lines[i].point[1].y;
-        cvLine(frameTmp,pt1,pt2,cvScalar(0,0,255,0),0,CV_AA,0);
+        cvLine(frameTmp,pt1,pt2,RED,0,CV_AA,0);
     }
-    cvShowImage("Probablistic Hough", frameTmp );
-    cvReleaseImage(&frameTmp);
+    //cvShowImage("Probablistic Hough", frameTmp );
+    //cvReleaseImage(&frameTmp);
 
     return;
 }
