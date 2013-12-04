@@ -42,22 +42,42 @@ void drawHoughLinesP(int, line_t*);
 
 static void functionPtr(const lcm_recv_buf_t *rbuf,
              const char *channel, const image_lines_t *msg, void *user) {
+    const int maxLines   = 15;
+    const int maxCircles = 5;
 
-    drawHoughLinesP(msg->numLines,msg->line);
+    int numLines = (int)msg->numLines;
+    int numCircles = (int)msg->numCircles;
 
-    printf("\n\n\nI have %d lines.Time: %lli\n",msg->numLines,msg->imageTimeStamp);
+    if(numLines > maxLines) numLines = maxLines;
+    if(numCircles > maxCircles) numCircles = maxCircles;
 
-	for(i=0;i<msg->numLines;i++)
-    printf("\tLine %2d=(%4d,%4d),(%4d,%4d)\n",i+1,
-		msg->line[i].point[0].x,
-		msg->line[i].point[0].y,
-		msg->line[i].point[1].x, 
+    drawHoughLinesP(numLines,msg->line);
+    //drawHoughCircles(numCircles,msg->circle); // TODO
+    
+    system("clear");
+    printf("\n\n\nTime: %li\n",msg->imageTimeStamp);
+    printf("\nFound %2d lines.\n",numLines);
+
+	for(i=0;i<numLines;i++) {
+        printf("\tLine %2d = (%4d,%4d),(%4d,%4d)\t",i+1,
+		    msg->line[i].point[0].x,
+	    	msg->line[i].point[0].y,
+		    msg->line[i].point[1].x, 
 	        msg->line[i].point[1].y);
 
+        printf("Color: Unknown\n"); // TODO
+    }
+    for(;i<maxLines;i++) printf("\n");
+    
+    printf("Found %2d circles.\n",numCircles);
+    for(i=0;i<numCircles;i++) {
+        printf("\tCircle %2d, Center = (%4d,%4d), Radius = %2d\n",i+1,
+            (int)msg->circle[i].center.x,
+            (int)msg->circle[i].center.y, 
+            (int)msg->circle[i].radius); 
+    }
+    for(;i<maxCircles;i++) printf("\n");
 
-    printf("Message Recieved!! from ");
-    printf(channel);
-    printf("\n");
     return;
 }
 
@@ -81,9 +101,8 @@ int main(int argc, char *argv[]) {
 
     //while(cvWaitKey(30) == -1) {
     while(1) { // loop forever (press ctrl+c to exit)
-        cvWaitKey(1);
-    //cvResizeWindow("Probablistic Hough", 500,500);
         lcm_handle(lcm);
+        cvWaitKey(10);
     }
     return 0;
 }
