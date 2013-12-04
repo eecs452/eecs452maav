@@ -79,7 +79,10 @@ int main(int argc, char *argv[]) {
     
     cvZero(frame);  
 
-    while(cvWaitKey(30) == -1) {
+    //while(cvWaitKey(30) == -1) {
+    while(1) { // loop forever (press ctrl+c to exit)
+        cvWaitKey(1);
+    //cvResizeWindow("Probablistic Hough", 500,500);
         lcm_handle(lcm);
     }
     return 0;
@@ -113,17 +116,9 @@ void initWindows(void) {
     int tmpCol = 0;
 
     // Open windows for images
-    tmpRow = 0; tmpCol = 0;
-    //cvNamedWindow("Original Image", CV_WINDOW_NORMAL);
-    //cvMoveWindow( "Original Image", tmpCol*scaleCol+offsetCol,
-    //        tmpRow*scaleRow+offsetRow);
-    tmpRow = 0; tmpCol = 1;
-    //cvNamedWindow("Edges Detected", CV_WINDOW_NORMAL);
-    //cvMoveWindow( "Edges Detected", tmpCol*scaleCol+offsetCol,
-    //        tmpRow*scaleRow+offsetRow);
-    tmpRow = 2; tmpCol = 2;
-    cvNamedWindow("Probablistic Hough", CV_WINDOW_NORMAL);
-    cvMoveWindow( "Probablistic Hough", tmpCol*scaleCol+offsetCol,
-            tmpRow*scaleRow+offsetRow);
+    tmpRow = 0; tmpCol = 2;
+    cvNamedWindow( "Probablistic Hough", CV_WINDOW_NORMAL);
+    cvResizeWindow("Probablistic Hough", 900,1000);
+    cvMoveWindow(  "Probablistic Hough", 1000,0);
 }
 
