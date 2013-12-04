@@ -17,7 +17,9 @@ int64_t __image_lines_t_hash_recursive(const __lcm_hash_ptr *p)
         if (fp->v == __image_lines_t_get_hash)
             return 0;
 
-    const __lcm_hash_ptr cp = { p, (void*)__image_lines_t_get_hash };
+    __lcm_hash_ptr cp;
+    cp.parent =  p;
+    cp.v = (void*)__image_lines_t_get_hash;
     (void) cp;
 
     int64_t hash = 0x7de03ac2a88830b8LL
