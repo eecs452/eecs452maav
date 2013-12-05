@@ -120,6 +120,7 @@ int main(int argc, char *argv[]) {
     frameR =      cvCreateImage(s, d ,1);
     frameG =      cvCreateImage(s, d ,1);
     frameB =      cvCreateImage(s, d ,1);
+    frameOR =	  cvCreateImage(s,d,1);
     frameBlur =   cvCreateImage(s, d ,1);
     frameEdge =   cvCreateImage(s, d ,1);
     
@@ -163,7 +164,7 @@ int main(int argc, char *argv[]) {
         retVal = (int)frame;
 
         cvSplit(frame, frameB, frameG, frameR, 0);
-        cvOr(frameR,frameG,frameOR);
+        cvOr(frameR,frameG,frameOR,NULL);
 #ifdef SHOW_IMAGES
 	cvShowImage("Or'd Image", frameOR);
 #endif

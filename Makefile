@@ -27,3 +27,5 @@ circle:
 	gcc -g -pg -I/usr/local/include/opencv circleTest.cpp -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
 circlebasic:
 	gcc -pg -I/usr/local/include/opencv houghcircles_scrollbars.cpp -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
+bitwiseor:
+	gcc -o ./b.out -I/usr/local/include/opencv -I/homeleonard/lcm rasbpiOrImage.c $(LCM_TYPES) common/timestamp.c -llcm -lopencv_core -lopencv_legacy -lopencv_imgproc -lopencv_photo -lopencv_highgui
