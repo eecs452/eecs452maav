@@ -134,9 +134,6 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 void drawHoughCircles(int numCircles, circle_t* circles, IplImage* frameTmp){
-    //CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
-    //int d = IPL_DEPTH_8U;
-    //frameTmp = cvCloneImage(frame);
     int i;
     
     CvPoint center;
@@ -146,20 +143,12 @@ void drawHoughCircles(int numCircles, circle_t* circles, IplImage* frameTmp){
         center.y = circles[i].center.y;
         radius   = circles[i].radius;
 
-
-        //cvCircle(frameTmp, center,      3, RED, -1, CV_AA, 0);
         cvCircle(frameTmp, center, radius, WHITE, 0, CV_AA, 0); 
     }
-    //cvShowImage("Probablistic Hough", frameTmp );
-    //cvReleaseImage(&frameTmp);
 
-    
     return;
 }
 void drawHoughLinesP(int numLines, line_t* lines, IplImage* frameTmp){
-    //CvSize s = cvSize(DESIRED_WIDTH,DESIRED_HEIGHT);
-    //int d = IPL_DEPTH_8U;
-    //frameTmp = cvCloneImage(frame);
     int i;
     
     Color_u color;
@@ -174,13 +163,10 @@ void drawHoughLinesP(int numLines, line_t* lines, IplImage* frameTmp){
         pt2.y = lines[i].point[1].y;
         
         color.raw = lines[i].color;
-        color.f.R = 1; // override for testing
 
         scalarColor = cvScalar(color.f.B*256, color.f.G*256, color.f.R*256,0);
         cvLine(frameTmp,pt1,pt2,scalarColor,0,CV_AA,0);
     }
-    //cvShowImage("Probablistic Hough", frameTmp );
-    //cvReleaseImage(&frameTmp);
 
     return;
 }
