@@ -10,11 +10,11 @@
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
 
-//#define SHOW_IMAGES
+#define SHOW_IMAGES
 //#define DEBUG
-#define SEND_LCM
-#define DETECT_CIRCLES
-#define LINE_COLOR
+//#define SEND_LCM
+//#define DETECT_CIRCLES
+//#define LINE_COLOR
 
 IplImage* frame;        // Original Image  (scaled Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
@@ -24,6 +24,8 @@ IplImage* frameB;       // Blue Coponent    (scaled)
 IplImage* frameOR;	// Red and green Bitwise-or'd image
 IplImage* frameBlur;    // Blured image
 IplImage* frameEdge;    // Edge map
+IplImage* frameEdgeR;    // Edge map
+IplImage* frameEdgeG;    // Edge map
 IplImage* frameTmp;
 
 CvMemStorage* lineStorage;
@@ -123,6 +125,8 @@ int main(int argc, char *argv[]) {
     frameOR =	  cvCreateImage(s,d,1);
     frameBlur =   cvCreateImage(s, d ,1);
     frameEdge =   cvCreateImage(s, d ,1);
+    frameEdgeR =   cvCreateImage(s, d ,1);
+    frameEdgeG =   cvCreateImage(s, d ,1);
     
     cvSplit(frame, frameB, frameG, frameR, 0);
     int colorSwitch = 0;
@@ -164,21 +168,14 @@ int main(int argc, char *argv[]) {
         retVal = (int)frame;
 
         cvSplit(frame, frameB, frameG, frameR, 0);
-        cvOr(frameR,frameG,frameOR,NULL);
-#ifdef SHOW_IMAGES
-	cvShowImage("Or'd Image", frameOR);
-#endif
-	cvSmooth(frameOR, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
-        /*if(colorSwitch) {
-            colorSwitch = 0;
-            cvSmooth(frameR, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
-        }
-        else {
-            colorSwitch = 1;
-            cvSmooth(frameG, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
-        }*/
-        cvCanny(frameBlur, frameEdge, edgeThresh, edgeThresh*3,3);
+
+        cvSmooth(frameG, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
+        cvCanny(frameBlur, frameEdgeG, edgeThresh, edgeThresh*3,3);
+        cvSmooth(frameR, frameBlur, CV_GAUSSIAN, blurDim*2+1, 0,0,0);
+        cvCanny(frameBlur, frameEdgeR, edgeThresh, edgeThresh*3,3);
         
+        cvOr(frameEdgeG,frameEdgeR,frameEdge,NULL);
+
         lines = findHoughLinesP();
         int numLines     = lines->total;
 
@@ -191,6 +188,8 @@ int main(int argc, char *argv[]) {
 #ifdef SHOW_IMAGES
         cvShowImage("Original Image", frame);
         cvShowImage("Edges Detected", frameEdge);
+        cvShowImage("Edges DetectedR", frameEdgeR);
+        cvShowImage("Edges DetectedG", frameEdgeG);
         frameTmp = cvCloneImage(frame);
         drawHoughLinesP(lines, frameTmp);
         cvReleaseImage(&frameTmp);
