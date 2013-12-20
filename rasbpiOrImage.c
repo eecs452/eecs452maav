@@ -275,6 +275,20 @@ int main(int argc, char *argv[]) {
         //printf("outside of circle detection while loop\n"); // delete this later
 #endif
 
+        CvPoint midpt;
+        midpt.x = 100;
+        midpt.y = 100;
+
+        CvRect rect = cvRect(midpt.x-2,midpt.y-2,5,5);
+        CvRect oldRect = cvGetImageROI(frame);
+        cvSetImageROI(frame,rect);
+        CvScalar samp = cvAvg(frame,NULL);
+        cvSetImageROI(frame,oldRect);
+        int B = (int)samp.val[0];
+        int G = (int)samp.val[1];
+        int R = (int)samp.val[2];
+        printf("(%i,%i,%i)\n",R,G,B);
+
 
         int nSize = frame->nSize;
         //int64_t imageSize = frame->imageSize;
@@ -343,6 +357,11 @@ int8_t detectLineColor(CvPoint pt1, CvPoint pt2) {
 
     midpt.x = (pt1.x+pt2.x) >> 1;
     midpt.y = (pt1.y+pt2.y) >> 1;
+
+    CvRect rect = cvRect(midpt.x-2,midpt.y-2,5,5);
+    cvSetImageROI(frame,rect);
+    CvScalar samp = cvAvg(frame,NULL);
+    printf("(%f,%f,%f),",samp.val[0],samp.val[1],samp.val[2]);
 
     B = ((uchar*)(frame->imageData + frame->widthStep*midpt.y))[midpt.x*3  ];
     G = ((uchar*)(frame->imageData + frame->widthStep*midpt.y))[midpt.x*3+1];
