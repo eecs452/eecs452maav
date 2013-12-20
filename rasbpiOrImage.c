@@ -10,11 +10,11 @@
 #define DESIRED_WIDTH 176
 #define DESIRED_HEIGHT 144
 
-#define SHOW_IMAGES
+//#define SHOW_IMAGES
 //#define DEBUG
-//#define SEND_LCM
-//#define DETECT_CIRCLES
-//#define LINE_COLOR
+#define SEND_LCM
+#define DETECT_CIRCLES
+#define LINE_COLOR
 
 IplImage* frame;        // Original Image  (scaled Resolution)
 IplImage* frameScale;   // Original Image  (scaled resolution)
